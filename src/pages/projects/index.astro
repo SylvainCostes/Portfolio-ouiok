@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content'
+
+import ProjectCard from '@/components/ProjectCard'
+import ProjectHeader from '@/components/ProjectHeader.astro'
+import SEO from '@/components/SEO.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getCustomTransition } from '@/lib/customTransition'
+import { projectMetaData } from '@/lib/metaData'
+
+import Decorator from './_components/Decorator.astro'
+
+const projects = await getCollection('projects')
+---
+
+<BaseLayout>
+  <SEO
+    title={`Projects | ${projectMetaData.title}`}
+    description={projectMetaData.description}
+    slot='seo'
+  />
+  <Decorator slot='decorator' />
+  <ProjectHeader class='mt-16 sm:mt-40' />
+  <section
+    class='mt-12 grid gap-12 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3'
+    transition:animate={getCustomTransition(0.2)}
+  >
+    {projects.map(({ id, data }) => <ProjectCard slug={id} {...data} />)}
+  </section>
+</BaseLayout>

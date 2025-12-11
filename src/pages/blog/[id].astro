@@ -1,0 +1,41 @@
+---
+import type { GetStaticPaths } from 'astro'
+import { getCollection, render } from 'astro:content'
+import readingTime from 'reading-time'
+
+import ContentWrapper from '@/components/ContentWrapper.astro'
+import BlogLayout from '@/layouts/BlogLayout'
+import client from '@/lib/client'
+
+export const getStaticPaths = (async () => {
+  const blogEntries = await getCollection('blog')
+
+  return blogEntries.map((entry) => {
+    return {
+      params: { id: entry.id },
+      props: { entry }
+    }
+  })
+}) satisfies GetStaticPaths
+
+const { entry } = Astro.props
+const { Content, headings } = await render(entry)
+
+const getLastUpdatedTime = client.api.github['last-updated-file']
+const { latestCommitUrl, lastUpdatedTime } = await getLastUpdatedTime
+  .$get({ query: { path: `blog/${entry.id}.mdx` } })
+  .then((res) => res.json())
+
+const { minutes } = readingTime(entry.body!)
+---
+
+<BlogLayout
+  headings={headings}
+  id={entry.id}
+  updatedDate={new Date(lastUpdatedTime)}
+  latestCommitUrl={latestCommitUrl}
+  readingTime={Math.ceil(minutes)}
+  {...entry.data}
+>
+  <ContentWrapper content={Content} />
+</BlogLayout>

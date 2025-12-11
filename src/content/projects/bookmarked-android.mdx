@@ -1,0 +1,69 @@
+---
+year: 2024
+title: 'Bookmarked Android: A Simple Viewer for My Bookmarked Content'
+description: 'Built with Jetpack Compose, it aims to offer an improved reading experience on my laggy phone.'
+heroImage: '../../assets/project_bookmarked_android.png'
+heroImageAlign: 'center'
+---
+
+import GithubCard from '@/components/GithubCard.astro'
+import TweetCard from '@/components/TweetCard/TweetCard.astro'
+
+## Overview
+
+This project serves as a follow-up to my original Bookmarked project. While it stands independently, feel free to explore the [original project](/projects/bookmarked) for context.
+
+Bookmarked Android is a native Android client designed to view my collection of bookmarked tweets. Built with Jetpack Compose, it focuses on delivering an improved reading experience, making it easier and more enjoyable to revisit saved tweets on my device.
+
+## Goals and Motivation
+
+I rely heavily on Notion for desktop use, but using it on my six-year-old Android phone has always been frustrating due to its sluggish performance—an understandable _limitation given my phone’s age._
+
+Since I often revisit my bookmarked tweets, it felt much more practical to have an efficient way to access them directly on my phone.
+
+I saw two potential solutions:
+
+- Buy a new phone.
+- Build my own bookmarked client for my current phone.
+
+While the first option was tempting, my wallet had other plans. During my research, I discovered that Notion is built with React Native. Inspired by this, I decided to get hands-on experience building an app with Jetpack Compose while solving my personal pain point.
+
+## Tech Stack Used
+
+- **Jetpack Compose**: Used as the framework for building the app, providing a modern and declarative UI toolkit for Android.
+- **Hono**: A lightweight and fast framework for fetching and parsing data from the Notion API.
+
+## Features
+
+_Nothing too fancy here_—just a simple read-only app with the following features:
+
+- List View: Displays a collection of bookmarked tweets.
+- Infinite Scrolling: Seamless loading of tweets as you scroll.
+- Filtering: Options to filter by tweets, threads, or tags.
+- Full-Text Search: Powered by the Notion API for efficient keyword searches.
+
+## Challenges and How I Dealt with Them
+
+> Parsing JSON data is unbelievably hard
+
+Since this was my first time using Jetpack Compose and Kotlin, I initially struggled with parsing the complex response structure from the Notion API. The deeply nested JSON objects made it difficult to directly fetch and process the data on the client side.
+
+When the frustration peaked, I decided to involve a tool I was more familiar with: JavaScript. I built a lightweight backend using Hono.js to fetch and preprocess data from the Notion API. This backend simplified the JSON structure into a more consumable format, allowing the Android client to handle it with ease.
+
+## Demo
+
+<TweetCard tweetId='1847967261589639599' />
+<TweetCard tweetId='1847968430248316939' class='mt-8' />
+
+## Repositories
+
+<div className='not-prose space-y-4'>
+  <GithubCard owner='jestsee' repository='bookmarked-android' />
+  <GithubCard owner='jestsee' repository='bookmarked-api-hono' />
+</div>
+
+## Outro
+
+As a JavaScript developer, I still found Kotlin challenging to work with, despite its syntax being somewhat similar to Flutter, which I have experience with. Although the syntax felt familiar, Kotlin's unique concepts and features required a bit of adjustment.
+
+And as expected, the app runs smoothly on my Android phone 🥳.

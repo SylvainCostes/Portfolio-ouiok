@@ -1,0 +1,60 @@
+---
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+import client from '@/lib/client'
+
+import { Github } from './icons/Github'
+import Link from './Link'
+
+interface Props {
+  owner: string
+  repository: string
+  class?: string
+}
+
+dayjs.extend(relativeTime)
+
+const { owner, repository, class: className } = Astro.props
+
+const response = await client.api.github['repo-info'][':owner'][
+  ':repository'
+].$get({ param: { owner, repository } })
+const data = response.status === 200 ? await response.json() : null
+
+if (!data) return
+
+const updatedTime = dayjs(data.pushedAt).fromNow()
+---
+
+<!-- TODO: extract styles to a base card component -->
+<Link
+  target='_blank'
+  href={data.url}
+  class:list={[
+    'not-prose flex gap-3 overflow-clip rounded-xl px-4 py-3.5',
+    'bg-zinc-900 outline outline-zinc-800 hover:outline-2',
+    'group relative transition-all',
+    'max-md:flex-col-reverse',
+    className
+  ]}
+>
+  <span
+    style='transition-duration: 800ms;'
+    class:list={[
+      'max-md:hidden',
+      'absolute right-0 z-30 -mt-12 h-52 w-28 rotate-[24deg] bg-white opacity-[0.02]',
+      'translate-x-32 transition-all ease-out',
+      'group-hover:-translate-x-[520px]'
+    ]}></span>
+  <div class='flex-1 space-y-2 text-xs'>
+    <p class='text-sm text-zinc-200'>
+      {owner}/<strong class='font-medium'>{repository}</strong>
+    </p>
+    <p class='line-clamp-2 text-zinc-400'>
+      {data.description}
+    </p>
+    <p class='pt-2.5 text-zinc-400/75'>Updated {updatedTime}</p>
+  </div>
+  <Github className='size-6 text-white md:size-8' />
+</Link>

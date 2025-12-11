@@ -1,0 +1,31 @@
+---
+import RayLight from '@/components/Raylight'
+import { cn } from '@/lib/utils'
+---
+
+<RayLight.Container>
+  <RayLight.Component
+    className={cn(
+      'h-[267px] w-[1192px] rotate-[-20deg] opacity-100 md:opacity-40',
+      '-top-[252px] left-[100px]'
+    )}
+  />
+  <RayLight.Component
+    className={cn(
+      'h-[276px] w-[1192px] rotate-[-32deg] opacity-25',
+      '-top-[200px] left-[240px]'
+    )}
+  />
+  <RayLight.Component
+    className={cn(
+      'h-[388px] w-[1758px] rotate-[40deg] opacity-80',
+      '-left-[200px] -top-[440px]'
+    )}
+  />
+  <RayLight.Component
+    className={cn(
+      'h-[492px] w-[1192px] rotate-[-32deg] opacity-75',
+      '-top-[280px] left-[960px]'
+    )}
+  />
+</RayLight.Container>

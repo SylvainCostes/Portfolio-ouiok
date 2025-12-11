@@ -1,0 +1,20 @@
+---
+import { getCollection } from 'astro:content'
+
+import BlogCard from '@/components/BlogCard.astro'
+import BlogHeader from '@/components/BlogHeader.astro'
+import FancyLink from '@/components/FancyLink.astro'
+import { getCustomTransition } from '@/lib/customTransition'
+
+const blog = await getCollection('blog')
+---
+
+<section id='blog' class='mt-40 scroll-mt-16'>
+  <div class='items-center justify-between gap-4 lg:flex'>
+    <BlogHeader forHomePage />
+    <FancyLink class='max-lg:hidden' href='/blog'>View all articles</FancyLink>
+  </div>
+  <div class='mt-12' transition:animate={getCustomTransition(0.2)}>
+    {blog.map((item) => <BlogCard {...item} />)}
+  </div>
+</section>

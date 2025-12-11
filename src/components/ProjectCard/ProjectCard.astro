@@ -1,0 +1,50 @@
+---
+import type { InferEntrySchema } from 'astro:content'
+
+import Image from '@/components/Image'
+import Link from '@/components/Link'
+
+import { ArrowRight } from '../icons/ArrowRight'
+
+interface Props
+  extends Pick<
+    InferEntrySchema<'projects'>,
+    'title' | 'year' | 'description' | 'heroImage' | 'heroImageAlign'
+  > {
+  slug: string
+}
+
+const { year, title, description, slug, heroImage, heroImageAlign } =
+  Astro.props
+---
+
+<Link href={`projects/${slug}`} class='group space-y-6'>
+  <Image
+    src={heroImage}
+    alt={title}
+    align={heroImageAlign}
+    class='aspect-[1.75] transition-all duration-800 group-hover:scale-105'
+    wrapperProps={{ class: 'rounded-lg overflow-clip' }}
+  />
+  <div class='flex flex-col gap-4'>
+    <p>{year}</p>
+    <!-- should we use heading here? -->
+    <h4
+      class='font-display text-xl font-semibold !leading-[1.25] max-sm:text-lg'
+    >
+      {title}
+    </h4>
+    <p class='text-sm text-zinc-400'>
+      {description}
+    </p>
+    <span
+      class='link-hover-animation group-hover:link-hovered-animation w-fit text-sm text-emerald-400'
+      >Read more
+      <ArrowRight
+        className='ml-1 inline-block transition-all duration-300 group-hover:ml-2'
+      />
+    </span>
+  </div>
+</Link>
+
+<style define:vars={{ offsetEnd: '24px' }}></style>

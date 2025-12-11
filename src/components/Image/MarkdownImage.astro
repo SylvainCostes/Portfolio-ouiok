@@ -1,0 +1,10 @@
+---
+import Image from './Image.astro'
+import type { CustomImageProps } from './types'
+
+type Props = CustomImageProps
+
+const { props } = Astro
+---
+
+<Image {...props} title={props.alt} inferSize />

@@ -1,0 +1,21 @@
+---
+import RayLight from '@/components/Raylight'
+import { cn } from '@/lib/utils'
+---
+
+<RayLight.Container>
+  <RayLight.Component
+    type='secondary'
+    className={cn(
+      'h-[117px] w-[585px] -rotate-[37deg] opacity-20',
+      '-top-[40px] left-[560px]'
+    )}
+  />
+  <RayLight.Component
+    type='secondary'
+    className={cn(
+      'h-[267px] w-[1192px] -rotate-[37deg] opacity-45',
+      '-top-[60px] left-[680px]'
+    )}
+  />
+</RayLight.Container>

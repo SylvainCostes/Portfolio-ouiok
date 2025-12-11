@@ -1,0 +1,56 @@
+---
+import { Image } from 'astro:assets'
+
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+
+// need to convert PhotoCard component as an Astro component
+// because it will optimize the used of local image
+const POSITION_CLASS = [
+  {
+    imageSrc:
+      'https://images.unsplash.com/photo-1636038151101-59b2feab335a?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    translate: '-translate-x-[64px] -translate-y-1.5',
+    rotate: 'rotate-[-3deg] group-hover:rotate-[-15deg]'
+  },
+  {
+    imageSrc:
+      'https://images.unsplash.com/photo-1636743094110-5e153f93ad7e?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    translate:
+      'translate-x-[0px] translate-y-[-4px] group-hover:translate-y-[-32px]',
+    rotate: 'rotate-[-8deg] '
+  },
+  {
+    imageSrc:
+      'https://images.unsplash.com/photo-1658383178431-42985646a636?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDR8fG5vdGlvbnxlbnwwfHwwfHx8MA%3D%3D',
+    translate: 'translate-x-[64px]',
+    rotate: 'rotate-[2deg] group-hover:rotate-[10deg]'
+  }
+]
+---
+
+<div class:list={['flex h-[180px] items-center justify-center', className]}>
+  {
+    POSITION_CLASS.map(({ rotate, translate, imageSrc }, index) => (
+      <div
+        class:list={[
+          'absolute aspect-square w-32 overflow-hidden rounded-2xl border-5 border-white shadow-lg',
+          'transition-all duration-300',
+          rotate,
+          translate
+        ]}
+      >
+        <Image
+          src={imageSrc}
+          alt='TODO'
+          class='h-full w-full object-cover'
+          transition:name={index === 1 ? 'ass' : 'asd'}
+          inferSize
+        />
+      </div>
+    ))
+  }
+</div>

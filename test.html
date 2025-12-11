@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio 3D Architecture</title>
+<style>
+  :root {
+    /* --- CONFIGURATION --- */
+    --cube-size: 100px; 
+    --grid-size: 100px;
+    --gap: 200px;
+    
+    /* --- COULEURS --- */
+    --bg-color: #020204;
+    --grid-line: rgba(255, 255, 255, 0.1);
+    --cube-bg: #0a0e17;
+    
+    --neon-blue: #00f3ff;   /* Cyan (Standard) */
+    --neon-purple: #bd00ff; /* Violet (K8s) */
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; margin: 0; overflow: hidden;
+    perspective: 1200px; font-family: sans-serif;
+  }
+
+  .scene {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(60deg) rotateZ(-45deg);
+    width: 0; height: 0;
+  }
+
+  /* --- 1. GRILLE --- */
+  .floor-grid {
+    position: absolute; width: 2000px; height: 2000px;
+    top: -1000px; left: -1000px;
+    background-image: 
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -50px -50px; 
+    mask-image: radial-gradient(circle at center, black 30%, transparent 65%);
+    pointer-events: none;
+  }
+
+  /* --- 2. CUBE --- */
+  .cube {
+    position: absolute;
+    width: var(--cube-size); height: var(--cube-size);
+    top: calc(var(--cube-size) / -2); left: calc(var(--cube-size) / -2);
+    transform-style: preserve-3d;
+    cursor: pointer;
+  }
+
+  /* A. Le Sol (Fond opaque) */
+  .cube-floor {
+    position: absolute; width: 100%; height: 100%;
+    background: var(--cube-bg);
+    transform: translateZ(0);
+    overflow: hidden; 
+    transition: background 0.4s ease;
+  }
+
+  /* B. Les 4 Arrêtes (Cadre lumineux) */
+  .cube-edges {
+    position: absolute; width: 100%; height: 100%;
+    top: 0; left: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-sizing: border-box; 
+    transform: translateZ(0); 
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 5; 
+  }
+
+  /* C. Murs (Épaisseur) */
+  .cube-wall-s {
+    position: absolute; width: 100%; height: 30px; background: #05070a;
+    bottom: 0; left: 0; transform-origin: bottom; 
+    transform: rotateX(-90deg) translateY(30px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  }
+  .cube-wall-e {
+    position: absolute; width: 30px; height: 100%; background: #10141d;
+    right: 0; top: 0; transform-origin: right; 
+    transform: rotateY(90deg) translateX(30px);
+  }
+
+   /* --- D. Cheminée et Faisceau (CORRIGÉ) --- */
+  .particles-chimney {
+    position: absolute; 
+    top: 0; left: 0; width: 100%; height: 100%;
+    transform-style: preserve-3d; 
+    pointer-events: none; 
+    z-index: 10;
+  }
+  
+/* Remplace ton bloc .beam actuel par celui-ci */
+.beam {
+  position: absolute;
+  width: 100%;
+  height: 300px;
+  top: 50%; /* IMPORTANT : On part du centre du carré vers le bas */
+  background: linear-gradient(to bottom, rgba(0, 243, 255, 0.6) 0%, rgba(0, 243, 255, 0.2) 50%, transparent 100%);
+  transform-origin: top center; /* L'échelle grandit vers le bas à partir du centre */
+  transform: rotateX(-90deg) scaleY(0);
+  opacity: 0;
+  transition: all 0.5s ease;
+  pointer-events: none;
+}
+  .beam.cross {
+    transform: rotateX(-90deg) rotateY(90deg) scaleY(0);
+  }
+
+
+
+  /* E. Logo */
+  .logo-container {
+    position: absolute; width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    transform: translateZ(2px); pointer-events: none; z-index: 20;
+  }
+  .logo-wrapper { width: 50%; height: 50%; transform: rotate(45deg); }
+  .logo-img {
+    width: 100%; height: 100%; object-fit: contain; opacity: 0.4; 
+    transition: 0.4s ease; filter: grayscale(100%);
+  }
+
+  /* Particules */
+  .particle {
+    position: absolute; width: 4px; height: 4px;
+    background: var(--neon-blue); border-radius: 50%;
+    opacity: 0; box-shadow: 0 0 5px var(--neon-blue);
+  }
+  @keyframes riseUp {
+    0% { transform: translateZ(0) scale(1); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateZ(300px) scale(0); opacity: 0; }
+  }
+
+
+  /* --- 3. INTERACTION HOVER --- */
+
+  /* 1. Allumage des 4 Arrêtes */
+  .cube:hover .cube-edges {
+    border-color: var(--neon-blue);
+    border-width: 2px;
+    box-shadow: 0 0 15px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+  }
+
+  /* 2. Sol */
+  .cube:hover .cube-floor { background: #121a25; }
+
+  /* 3. Lumière qui MONTE (Scale Y -> 1) */
+  .cube:hover .beam { 
+    opacity: 1; 
+    transform: rotateX(90deg) translateZ(-50px) scaleY(1);
+  }
+  .cube:hover .beam.cross {
+    transform: rotateX(90deg) rotateY(90deg) translateZ(-50px) scaleY(1);
+  }
+
+  /* 4. Logo et Particules */
+  .cube:hover .logo-img { opacity: 1; filter: grayscale(0%) drop-shadow(0 0 10px var(--neon-blue)); }
+  .cube:hover .particle { animation: riseUp 2s infinite linear; }
+
+
+  /* --- 4. POSITIONS & VARIANTES --- */
+  .center { transform: translate3d(0,0,0); z-index: 10; }
+  .pos-left { transform: translate3d(calc(var(--gap) * -1), 0, 0); }
+  .pos-right { transform: translate3d(var(--gap), 0, 0); }
+  .pos-top { transform: translate3d(0, calc(var(--gap) * -1), 0); }
+  .pos-btm { transform: translate3d(0, var(--gap), 0); }
+
+  /* Câbles */
+  .cable {
+    position: absolute; height: 4px; background: #1a2233;
+    transform-origin: 0 50%; top: 0; left: 0; z-index: 0;
+    box-shadow: 0 0 8px rgba(26, 34, 51, 0.6);
+  }
+  .cable::after {
+    content: ''; position: absolute; width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+    animation: pulseCable infinite 2.5s ease-in-out forwards; opacity: 0.5;
+    box-shadow: 0 0 10px var(--neon-blue);
+  }
+  @keyframes pulseCable { 
+    from { left: -30%; } 
+    to { left: 50%; opacity: 0.8; } 
+  }
+  .w1 { width: var(--gap); transform: rotate(0deg); left: calc(var(--cube-size) / 2); } 
+  .w2 { width: var(--gap); transform: rotate(180deg); left: calc(var(--cube-size) / -2); }
+  .w3 { width: var(--gap); transform: rotate(90deg); top: calc(var(--cube-size) / 2); } 
+  .w4 { width: var(--gap); transform: rotate(-90deg); top: calc(var(--cube-size) / -2); }
+
+  /* Variante Center (Violet) */
+  .center { --neon-blue: #bd00ff; }
+  .center .beam { background: linear-gradient(to bottom, rgba(189, 0, 255, 0.6) 0%, rgba(189, 0, 255, 0.2) 50%, transparent 100%); }
+
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="floor-grid"></div>
+
+  <div class="cable w1"></div><div class="cable w2"></div>
+  <div class="cable w3"></div><div class="cable w4"></div>
+
+  <!-- CENTER -->
+  <div class="cube center">
+    <div class="cube-floor"></div>
+    <div class="cube-edges"></div> 
+    <div class="cube-wall-s"></div><div class="cube-wall-e"></div>
+    <div class="particles-chimney"><div class="beam"></div><div class="beam cross"></div></div>
+    <div class="logo-container"><div class="logo-wrapper">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg" class="logo-img" alt="K8S">
+    </div></div>
+  </div>
+
+  <!-- LEFT -->
+  <div class="cube pos-left">
+    <div class="cube-floor"></div>
+    <div class="cube-edges"></div>
+    <div class="cube-wall-s"></div><div class="cube-wall-e"></div>
+    <div class="particles-chimney"><div class="beam"></div><div class="beam cross"></div></div>
+    <div class="logo-container"><div class="logo-wrapper">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/AWS_Simple_Icons_AWS_Cloud.svg" class="logo-img" alt="AWS">
+    </div></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="cube pos-right">
+    <div class="cube-floor"></div>
+    <div class="cube-edges"></div>
+    <div class="cube-wall-s"></div><div class="cube-wall-e"></div>
+    <div class="particles-chimney"><div class="beam"></div><div class="beam cross"></div></div>
+    <div class="logo-container"><div class="logo-wrapper">
+        <img src="https://cdn-icons-png.flaticon.com/512/1356/1356479.png" class="logo-img" style="filter: invert(1);" alt="CI/CD">
+    </div></div>
+  </div>
+
+  <!-- TOP -->
+  <div class="cube pos-top">
+    <div class="cube-floor"></div>
+    <div class="cube-edges"></div>
+    <div class="cube-wall-s"></div><div class="cube-wall-e"></div>
+    <div class="particles-chimney"><div class="beam"></div><div class="beam cross"></div></div>
+    <div class="logo-container"><div class="logo-wrapper">
+        <img src="https://www.vectorlogo.zone/logos/terraformio/terraformio-icon.svg" class="logo-img" alt="Terraform">
+    </div></div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="cube pos-btm">
+    <div class="cube-floor"></div>
+    <div class="cube-edges"></div>
+    <div class="cube-wall-s"></div><div class="cube-wall-e"></div>
+    <div class="particles-chimney"><div class="beam"></div><div class="beam cross"></div></div>
+    <div class="logo-container"><div class="logo-wrapper">
+        <img src="https://cdn-icons-png.flaticon.com/512/2438/2438078.png" class="logo-img" style="filter: invert(1);" alt="Security">
+    </div></div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.cube').forEach(cube => {
+    const chimney = cube.querySelector('.particles-chimney');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.top = (Math.random() * 100) + '%';
+      p.style.animationDelay = (Math.random() * 2) + 's';
+      p.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+      p.style.animationPlayState = 'paused'; 
+      chimney.appendChild(p);
+    }
+    cube.addEventListener('mouseenter', () => {
+      cube.querySelectorAll('.particle').forEach(p => p.style.animationPlayState = 'running');
+    });
+    cube.addEventListener('mouseleave', () => {
+      cube.querySelectorAll('.particle').forEach(p => p.style.animationPlayState = 'paused');
+    });
+  });
+</script>
+
+</body>
+</html>

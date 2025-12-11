@@ -1,0 +1,463 @@
+---
+// Composant de scène 3D pour afficher les technologies
+---
+
+<div class="scene-container relative flex h-full w-full items-center justify-center overflow-hidden">
+  <div class="scene">
+    <div class="floor-grid"></div>
+
+    <div class="cable w1"></div>
+    <div class="cable w2"></div>
+    <div class="cable w3"></div>
+    <div class="cable w4"></div>
+
+    <!-- CENTER - Kubernetes -->
+    <div class="cube center">
+      <div class="cube-floor"></div>
+      <div class="cube-edges"></div>
+      <div class="cube-wall-s"></div>
+      <div class="cube-wall-e"></div>
+      <div class="particles-chimney">
+        <div class="beam"></div>
+        <div class="beam cross"></div>
+      </div>
+      <div class="logo-container">
+        <div class="logo-wrapper">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg"
+            class="logo-img"
+            alt="Kubernetes"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT - AWS -->
+    <div class="cube pos-left">
+      <div class="cube-floor"></div>
+      <div class="cube-edges"></div>
+      <div class="cube-wall-s"></div>
+      <div class="cube-wall-e"></div>
+      <div class="particles-chimney">
+        <div class="beam"></div>
+        <div class="beam cross"></div>
+      </div>
+      <div class="logo-container">
+        <div class="logo-wrapper">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/5/5c/AWS_Simple_Icons_AWS_Cloud.svg"
+            class="logo-img"
+            alt="AWS"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT - CI/CD -->
+    <div class="cube pos-right">
+      <div class="cube-floor"></div>
+      <div class="cube-edges"></div>
+      <div class="cube-wall-s"></div>
+      <div class="cube-wall-e"></div>
+      <div class="particles-chimney">
+        <div class="beam"></div>
+        <div class="beam cross"></div>
+      </div>
+      <div class="logo-container">
+        <div class="logo-wrapper">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/1356/1356479.png"
+            class="logo-img inverted"
+            alt="CI/CD"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP - Terraform -->
+    <div class="cube pos-top">
+      <div class="cube-floor"></div>
+      <div class="cube-edges"></div>
+      <div class="cube-wall-s"></div>
+      <div class="cube-wall-e"></div>
+      <div class="particles-chimney">
+        <div class="beam"></div>
+        <div class="beam cross"></div>
+      </div>
+      <div class="logo-container">
+        <div class="logo-wrapper">
+          <img
+            src="https://www.vectorlogo.zone/logos/terraformio/terraformio-icon.svg"
+            class="logo-img"
+            alt="Terraform"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM - Security -->
+    <div class="cube pos-btm">
+      <div class="cube-floor"></div>
+      <div class="cube-edges"></div>
+      <div class="cube-wall-s"></div>
+      <div class="cube-wall-e"></div>
+      <div class="particles-chimney">
+        <div class="beam"></div>
+        <div class="beam cross"></div>
+      </div>
+      <div class="logo-container">
+        <div class="logo-wrapper">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/2438/2438078.png"
+            class="logo-img inverted"
+            alt="Security"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.cube').forEach((cube) => {
+    const chimney = cube.querySelector('.particles-chimney')
+    if (!chimney) return
+
+    // Créer les particules
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div')
+      p.classList.add('particle')
+      p.style.left = Math.random() * 100 + '%'
+      p.style.top = Math.random() * 100 + '%'
+      p.style.animationDelay = Math.random() * 2 + 's'
+      p.style.animationDuration = Math.random() * 1.5 + 1.5 + 's'
+      p.style.animationPlayState = 'paused'
+      chimney.appendChild(p)
+    }
+
+    // Gérer les événements hover
+    cube.addEventListener('mouseenter', () => {
+      cube.querySelectorAll('.particle').forEach((p) => {
+        ;(p as HTMLElement).style.animationPlayState = 'running'
+      })
+    })
+
+    cube.addEventListener('mouseleave', () => {
+      cube.querySelectorAll('.particle').forEach((p) => {
+        ;(p as HTMLElement).style.animationPlayState = 'paused'
+      })
+    })
+  })
+</script>
+
+<style is:global>
+  :root {
+    /* Configuration */
+    --cube-size: 100px;
+    --grid-size: 100px;
+    --gap: 200px;
+
+    /* Couleurs */
+    --bg-color: #020204;
+    --grid-line: rgba(255, 255, 255, 0.1);
+    --cube-bg: #0a0e17;
+
+    --neon-blue: #00f3ff;
+    --neon-purple: #bd00ff;
+  }
+
+  .scene-container {
+    perspective: 1200px;
+  }
+
+  .scene {
+    @apply relative;
+    transform-style: preserve-3d;
+    transform: rotateX(60deg) rotateZ(-45deg);
+    width: 0;
+    height: 0;
+  }
+
+  /* Grille */
+  .floor-grid {
+    @apply absolute pointer-events-none;
+    width: 2000px;
+    height: 2000px;
+    top: -1000px;
+    left: -1000px;
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -50px -50px;
+    mask-image: radial-gradient(
+      circle at center,
+      black 30%,
+      transparent 65%
+    );
+  }
+
+  /* Cube */
+  .cube {
+    @apply absolute cursor-pointer;
+    width: var(--cube-size);
+    height: var(--cube-size);
+    top: calc(var(--cube-size) / -2);
+    left: calc(var(--cube-size) / -2);
+    transform-style: preserve-3d;
+  }
+
+  /* Sol du cube */
+  .cube-floor {
+    @apply absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--cube-bg);
+    transform: translateZ(0);
+    overflow: hidden;
+    transition: background 0.4s ease;
+  }
+
+  /* Arrêtes */
+  .cube-edges {
+    @apply absolute pointer-events-none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+    transform: translateZ(0);
+    transition: all 0.3s ease;
+    z-index: 5;
+  }
+
+  /* Murs */
+  .cube-wall-s {
+    @apply absolute;
+    width: 100%;
+    height: 30px;
+    background: #05070a;
+    bottom: 0;
+    left: 0;
+    transform-origin: bottom;
+    transform: rotateX(-90deg) translateY(30px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  }
+
+  .cube-wall-e {
+    @apply absolute;
+    width: 30px;
+    height: 100%;
+    background: #10141d;
+    right: 0;
+    top: 0;
+    transform-origin: right;
+    transform: rotateY(90deg) translateX(30px);
+  }
+
+  /* Cheminée et Faisceau */
+  .particles-chimney {
+    @apply absolute pointer-events-none;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    z-index: 10;
+  }
+
+  .beam {
+    @apply absolute pointer-events-none;
+    width: 100%;
+    height: 300px;
+    top: 50%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 243, 255, 0.6) 0%,
+      rgba(0, 243, 255, 0.2) 50%,
+      transparent 100%
+    );
+    transform-origin: top center;
+    transform: rotateX(-90deg) scaleY(0);
+    opacity: 0;
+    transition: all 0.5s ease;
+  }
+
+  .beam.cross {
+    transform: rotateX(-90deg) rotateY(90deg) scaleY(0);
+  }
+
+  /* Logo */
+  .logo-container {
+    @apply absolute pointer-events-none flex items-center justify-center;
+    width: 100%;
+    height: 100%;
+    transform: translateZ(2px);
+    z-index: 20;
+  }
+
+  .logo-wrapper {
+    width: 50%;
+    height: 50%;
+    transform: rotate(45deg);
+  }
+
+  .logo-img {
+    @apply object-contain;
+    width: 100%;
+    height: 100%;
+    opacity: 0.4;
+    transition: 0.4s ease;
+    filter: grayscale(100%);
+  }
+
+  .logo-img.inverted {
+    filter: grayscale(100%) invert(1);
+  }
+
+  /* Particules */
+  .particle {
+    @apply absolute rounded-full;
+    width: 4px;
+    height: 4px;
+    background: var(--neon-blue);
+    opacity: 0;
+    box-shadow: 0 0 5px var(--neon-blue);
+  }
+
+  @keyframes riseUp {
+    0% {
+      transform: translateZ(0) scale(1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateZ(300px) scale(0);
+      opacity: 0;
+    }
+  }
+
+  /* Hover Interactions */
+  .cube:hover .cube-edges {
+    border-color: var(--neon-blue);
+    border-width: 2px;
+    box-shadow: 0 0 15px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+  }
+
+  .cube:hover .cube-floor {
+    background: #121a25;
+  }
+
+  .cube:hover .beam {
+    opacity: 1;
+    transform: rotateX(90deg) translateZ(-50px) scaleY(1);
+  }
+
+  .cube:hover .beam.cross {
+    transform: rotateX(90deg) rotateY(90deg) translateZ(-50px) scaleY(1);
+  }
+
+  .cube:hover .logo-img {
+    opacity: 1;
+    filter: grayscale(0%) drop-shadow(0 0 10px var(--neon-blue));
+  }
+
+  .cube:hover .logo-img.inverted {
+    filter: grayscale(0%) invert(1) drop-shadow(0 0 10px var(--neon-blue));
+  }
+
+  .cube:hover .particle {
+    animation: riseUp 2s infinite linear;
+  }
+
+  /* Positions */
+  .center {
+    transform: translate3d(0, 0, 0);
+    z-index: 10;
+    --neon-blue: #bd00ff;
+  }
+
+  .center .beam {
+    background: linear-gradient(
+      to bottom,
+      rgba(189, 0, 255, 0.6) 0%,
+      rgba(189, 0, 255, 0.2) 50%,
+      transparent 100%
+    );
+  }
+
+  .pos-left {
+    transform: translate3d(calc(var(--gap) * -1), 0, 0);
+  }
+
+  .pos-right {
+    transform: translate3d(var(--gap), 0, 0);
+  }
+
+  .pos-top {
+    transform: translate3d(0, calc(var(--gap) * -1), 0);
+  }
+
+  .pos-btm {
+    transform: translate3d(0, var(--gap), 0);
+  }
+
+  /* Câbles */
+  .cable {
+    @apply absolute;
+    height: 4px;
+    background: #1a2233;
+    transform-origin: 0 50%;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    box-shadow: 0 0 8px rgba(26, 34, 51, 0.6);
+  }
+
+  .cable::after {
+    @apply absolute;
+    content: '';
+    width: 30%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+    animation: pulseCable infinite 2.5s ease-in-out forwards;
+    opacity: 0.5;
+    box-shadow: 0 0 10px var(--neon-blue);
+  }
+
+  @keyframes pulseCable {
+    from {
+      left: -30%;
+    }
+    to {
+      left: 50%;
+      opacity: 0.8;
+    }
+  }
+
+  .w1 {
+    width: var(--gap);
+    transform: rotate(0deg);
+    left: calc(var(--cube-size) / 2);
+  }
+
+  .w2 {
+    width: var(--gap);
+    transform: rotate(180deg);
+    left: calc(var(--cube-size) / -2);
+  }
+
+  .w3 {
+    width: var(--gap);
+    transform: rotate(90deg);
+    top: calc(var(--cube-size) / 2);
+  }
+
+  .w4 {
+    width: var(--gap);
+    transform: rotate(-90deg);
+    top: calc(var(--cube-size) / -2);
+  }
+</style>

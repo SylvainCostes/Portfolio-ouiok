@@ -1,0 +1,86 @@
+---
+import Analytics from '@vercel/analytics/astro'
+
+import BaseHead from '@/components/BaseHead.astro'
+import BottomNavigationBar from '@/components/BottomNavigationBar'
+import Footer from '@/components/Footer'
+import SEO from '@/components/SEO.astro'
+
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<!doctype html>
+<html lang='en' class='dark'>
+  <head>
+    <BaseHead />
+    <slot name='head' />
+    <slot name='seo'>
+      {/* @ts-expect-error: this is expected since it's inside BaseLayout */}
+      <SEO />
+    </slot>
+  </head>
+  <body class='flex min-h-dvh flex-col items-center bg-zinc-950 text-white'>
+    <slot name='decorator' />
+    <main
+      class:list={[
+        'w-full max-w-[1200px] px-12 pb-16 tracking-wide transition-all max-sm:px-4',
+        className
+      ]}
+    >
+      <slot />
+    </main>
+    <Footer />
+    <BottomNavigationBar client:only='react' transition:persist='navbar' />
+    <Analytics />
+  </body>
+</html>
+
+<script>
+  const scrollOptions: ScrollIntoViewOptions = {
+    behavior: 'smooth',
+    block: 'start'
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    document.getElementById('nav-dock')?.classList.remove('!p-3')
+
+    // handle hash on initial load
+    if (window.location.hash) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+
+      const targetId = window.location.hash.substring(1)
+      const targetElement = document.getElementById(targetId)
+      targetElement?.scrollIntoView(scrollOptions)
+    }
+
+    // handle in page navigation
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault()
+
+        const currentTarget = event.currentTarget as HTMLAnchorElement
+        const targetId = currentTarget.getAttribute('href')?.substring(1) // Get ID without '#'
+
+        if (!targetId) return
+
+        const targetElement = document.getElementById(targetId)
+        const block = currentTarget.dataset['block'] as ScrollLogicalPosition
+        targetElement?.scrollIntoView({ ...scrollOptions, block })
+
+        // Manually update the URL hash without triggering the default jump
+        history.pushState(null, '', `#${targetId}`)
+      })
+    })
+
+    window.addEventListener('hashchange', () => {
+      const targetId = window.location.hash.substring(1)
+      const targetElement = document.getElementById(targetId)
+
+      targetElement?.scrollIntoView(scrollOptions)
+    })
+  })
+</script>

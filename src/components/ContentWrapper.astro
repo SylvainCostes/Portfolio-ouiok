@@ -1,0 +1,14 @@
+---
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
+
+import MarkdownImage from './Image/MarkdownImage.astro'
+import { LinkArticle } from './Link'
+
+interface Props {
+  content: AstroComponentFactory
+}
+
+const { content: Content } = Astro.props
+---
+
+<Content components={{ a: LinkArticle, img: MarkdownImage }} />

@@ -1,0 +1,77 @@
+---
+// Import the global.css file here so that it is included on
+// all pages through the use of the <BaseHead /> component.
+import '../styles/global.css'
+
+import { ClientRouter } from 'astro:transitions'
+import { AstroFont } from 'astro-font'
+import LoadingIndicator from 'astro-loading-indicator/component'
+---
+
+<!-- Global Metadata -->
+<meta charset='utf-8' />
+<meta name='viewport' content='width=device-width,initial-scale=1' />
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+<meta name='generator' content={Astro.generator} />
+<link rel='sitemap' href='/sitemap-index.xml' />
+
+<!-- Font -->
+<AstroFont
+  config={[
+    {
+      name: 'Switzer',
+      src: [
+        {
+          style: 'normal',
+          weight: '300 700',
+          path: '/fonts/Switzer-Variable.woff2'
+        }
+      ],
+      preload: true,
+      display: 'swap',
+      selector: 'body',
+      fallback: 'sans-serif'
+    },
+    {
+      name: 'Fustat SemiBold',
+      src: [
+        {
+          style: 'normal',
+          weight: '400 700',
+          path: '/fonts/Fustat-VariableFont_wght.ttf'
+        }
+      ],
+      preload: true,
+      display: 'swap',
+      fallback: 'sans-serif'
+    },
+    {
+      src: [],
+      name: 'DM Mono',
+      googleFontsURL:
+        'https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;1,300;1,400&display=swap',
+      preload: true,
+      display: 'swap',
+      selector: 'code',
+      fallback: 'monospace'
+    }
+  ]}
+/>
+
+<script
+  is:inline
+  defer
+  type='text/partytown'
+  src='https://cloud.umami.is/script.js'
+  data-website-id='a8c34226-d5d7-4059-86a0-ff586a7bfe08'
+  data-domains='sylvaincostes.fr,www.sylvaincostes.fr'></script>
+
+<ClientRouter fallback='swap' />
+<LoadingIndicator color='#fff' animationDuration={500} />
+
+<style is:global>
+  :root .astro-loading-indicator {
+    background: var(--accent-gradient-color);
+    opacity: 0.5;
+  }
+</style>

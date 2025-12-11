@@ -1,0 +1,110 @@
+---
+import type { UnresolvedImageTransform } from 'astro'
+import { getImage, Image as AstroImage } from 'astro:assets'
+
+import { alignClass, type CustomImageProps } from './types'
+
+type Props = CustomImageProps
+
+const {
+  class: className,
+  wrapperProps,
+  ambientMode,
+  align = 'top',
+  ...rest
+} = Astro.props
+
+const blurryImage = await getImage({
+  ...(rest as UnresolvedImageTransform),
+  width: 20
+})
+
+const { class: wrapperClass, ...restWrapperProps } = wrapperProps ?? {}
+---
+
+<div
+  class:list={[
+    'blur-load h-fit w-fit bg-cover',
+    alignClass[align].wrapper,
+    { 'ambient-mode': ambientMode },
+    wrapperClass
+  ]}
+  {...restWrapperProps}
+>
+  <AstroImage
+    class:list={[
+      'object-cover',
+      alignClass[align].image,
+      'h-[inherit] max-h-[inherit] rounded-[inherit]',
+      className
+    ]}
+    {...rest}
+  />
+</div>
+
+<style define:vars={{ 'bg-image': `url(${blurryImage.src})` }}>
+  .blur-load {
+    background-image: var(--bg-image);
+    filter: blur(36px);
+    transition: filter 300ms ease-in-out;
+  }
+
+  .blur-load.image-loaded {
+    filter: blur(0);
+  }
+
+  .blur-load.image-loaded > img {
+    opacity: 1;
+  }
+
+  .blur-load > img {
+    opacity: 0;
+    transition: all 300ms ease-in-out;
+  }
+
+  .ambient-mode {
+    position: relative;
+  }
+
+  .ambient-mode::before {
+    position: absolute;
+    max-width: 100vw;
+    overflow-x: hidden;
+    width: 105%;
+    height: 105%;
+
+    background-image: var(--bg-image);
+    background-size: cover;
+    filter: blur(64px);
+    opacity: 25%;
+    z-index: -10;
+
+    content: '';
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+</style>
+
+<script>
+  // it's safe to put the script here instead of BaseLayout
+  // because scripts are bundled and only included once per page
+  // source: https://docs.astro.build/en/guides/client-side-scripts/
+
+  document.addEventListener('astro:page-load', () => {
+    const blurDivs = document.querySelectorAll('.blur-load')
+    blurDivs.forEach((div) => {
+      const image = div.querySelector('img')
+
+      function handleLoadedImage() {
+        div.classList.add('image-loaded')
+      }
+
+      if (image?.complete) {
+        return handleLoadedImage()
+      }
+
+      image?.addEventListener('load', handleLoadedImage)
+    })
+  })
+</script>

@@ -1,0 +1,76 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
+import { getCollection, render } from 'astro:content'
+import readingTime from 'reading-time'
+import type { BreadcrumbList, WithContext } from 'schema-dts'
+
+import ContentWrapper from '@/components/ContentWrapper.astro'
+import ProjectLayout from '@/layouts/ProjectLayout'
+import client from '@/lib/client'
+import { getProjectSchema, projectWebsite } from '@/lib/structuredData'
+
+interface Props extends InferGetStaticPropsType<typeof getStaticPaths> {}
+
+export const getStaticPaths = (async () => {
+  const projectEntries = await getCollection('projects')
+
+  return projectEntries.map((entry) => ({
+    params: { id: entry.id },
+    props: { entry }
+  }))
+}) satisfies GetStaticPaths
+
+const { entry } = Astro.props
+const { Content, headings } = await render(entry)
+
+const getLastUpdatedTime = client.api.github['last-updated-file']
+const { latestCommitUrl, lastUpdatedTime } = await getLastUpdatedTime
+  .$get({ query: { path: `projects/${entry.id}.mdx` } })
+  .then((res) => res.json())
+
+const { minutes, words } = readingTime(entry.body!)
+
+const projectStructuredData = getProjectSchema(entry)
+
+const breadcrumbsStructuredData: WithContext<BreadcrumbList> = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Projects',
+      item: `${import.meta.env.SITE}/projects/`
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: entry.data.title,
+      item: `${import.meta.env.SITE}/projects/${entry.id}/`
+    }
+  ]
+}
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [projectStructuredData, breadcrumbsStructuredData, projectWebsite]
+}
+---
+
+<ProjectLayout
+  headings={headings}
+  slug={entry.id}
+  readingTime={Math.ceil(minutes)}
+  wordsCount={words}
+  updatedDate={new Date(lastUpdatedTime)}
+  latestCommitUrl={latestCommitUrl}
+  {...entry.data}
+>
+  <script
+    is:inline
+    type='application/ld+json'
+    set:html={JSON.stringify(jsonLd)}
+    slot='head'
+  />
+  <ContentWrapper content={Content} />
+</ProjectLayout>

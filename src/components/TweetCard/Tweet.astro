@@ -1,0 +1,46 @@
+---
+import { type EnrichedTweet } from 'react-tweet'
+
+import TweetHeader from './TweetHeader.astro'
+import TweetMedia from './TweetMedia.astro'
+import TweetText from './TweetText'
+
+interface Props {
+  tweet: EnrichedTweet
+}
+
+const { tweet } = Astro.props
+---
+
+<div
+  class:list={[
+    'max-w-lg break-inside-avoid border border-zinc-700 bg-zinc-900',
+    'rounded-xl bg-clip-padding p-4 pb-6 backdrop-blur-lg backdrop-filter'
+  ]}
+>
+  {/* User info, verified badge, twitter logo, text, etc. */}
+  <div>
+    <TweetHeader tweet={tweet} />
+    <TweetText tweet={tweet} />
+  </div>
+  {/* Images, Preview images, videos, polls, etc. */}
+  <div class='-mb-2 mt-3'>
+    {
+      tweet.mediaDetails?.length ? (
+        <div
+          class={
+            tweet.mediaDetails.length === 1
+              ? ''
+              : 'inline-grid grid-cols-2 gap-x-2 gap-y-2'
+          }
+        >
+          {tweet.mediaDetails?.map((media) => (
+            <a href={tweet.url} target='_blank'>
+              <TweetMedia tweet={tweet} media={media} />
+            </a>
+          ))}
+        </div>
+      ) : null
+    }
+  </div>
+</div>

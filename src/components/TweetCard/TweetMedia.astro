@@ -1,0 +1,45 @@
+---
+import { type EnrichedTweet, getMediaUrl, getMp4Video } from 'react-tweet'
+import type { MediaDetails } from 'react-tweet/api'
+
+import Image from '@/components/Image'
+
+import TweetVideo from './TweetVideo'
+
+interface Props {
+  tweet: EnrichedTweet
+  media: MediaDetails
+}
+
+const { media, tweet } = Astro.props
+---
+
+{
+  media.type === 'video' ? (
+    <TweetVideo
+      src={getMp4Video(media).url}
+      poster={getMediaUrl(media, 'small')}
+      client:only='react'
+    />
+  ) : media.type === 'animated_gif' ? (
+    <Image
+      alt={tweet.text}
+      width={2048}
+      height={media.original_info.height * (2048 / media.original_info.width)}
+      src={getMp4Video(media).url}
+      wrapperProps={{
+        class: 'rounded-lg border border-zinc-700 drop-shadow-sm'
+      }}
+    />
+  ) : (
+    <Image
+      alt={tweet.text}
+      width={2048}
+      height={media.original_info.height * (2048 / media.original_info.width)}
+      src={getMediaUrl(media, 'small')}
+      wrapperProps={{
+        class: 'rounded-lg border border-zinc-700 drop-shadow-sm'
+      }}
+    />
+  )
+}

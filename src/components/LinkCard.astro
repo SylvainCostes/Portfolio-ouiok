@@ -1,0 +1,89 @@
+---
+import { inferRemoteSize } from 'astro:assets'
+
+import Image from '@/components/Image'
+import client from '@/lib/client'
+
+import Link from './Link/Link.astro'
+
+interface Props {
+  url: string
+  class?: string
+}
+
+const { url, class: className } = Astro.props
+
+const metadata = await client.api['link-metadata']
+  .$get({ query: { url } })
+  .then((res) => res.json())
+
+if (!metadata.success) return
+
+// infer remote image size
+let aspectRatio: number | undefined
+
+if (metadata.image) {
+  const { height, width } = await inferRemoteSize(metadata.image?.url)
+  aspectRatio = width / height
+}
+---
+
+<Link
+  target='_blank'
+  href={url}
+  class:list={[
+    'not-prose flex overflow-clip rounded-xl md:h-full md:max-h-[144px]',
+    'bg-zinc-900 outline outline-zinc-700 hover:outline-2',
+    'group relative transition-all',
+    // 'max-md:flex-col-reverse',
+    className
+  ]}
+>
+  <span
+    style='transition-duration: 800ms;'
+    class:list={[
+      'max-md:hidden',
+      'absolute right-0 z-30 -mt-8 h-52 w-28 rotate-[24deg] bg-white opacity-[0.02]',
+      'translate-x-32 transition-all ease-out',
+      'group-hover:-translate-x-[520px]'
+    ]}></span>
+  <div class='flex h-full flex-col justify-center gap-2 p-4'>
+    <p
+      class='line-clamp-2 text-sm font-normal leading-snug tracking-wide !text-zinc-200'
+    >
+      {metadata.title}
+    </p>
+    <p class='line-clamp-2 text-xs leading-normal text-zinc-400'>
+      {metadata.description}
+    </p>
+    <div class='flex gap-2 pt-1 text-xs'>
+      {
+        metadata.faviconUrl && (
+          <Image
+            wrapperProps={{ class: 'size-4 flex-shrink-0' }}
+            src={metadata.faviconUrl}
+            alt={metadata.title ?? url}
+            height={16}
+            width={16}
+            inferSize
+          />
+        )
+      }
+      <p
+        class='line-clamp-1 text-zinc-400/75 transition-all group-hover:text-zinc-400'
+      >
+        {url}
+      </p>
+    </div>
+  </div>
+  {
+    metadata.image && (
+      <Image
+        wrapperProps={{ style: { aspectRatio }, class: 'h-full max-sm:hidden' }}
+        src={metadata.image.url}
+        alt={metadata.image.alt ?? url}
+        inferSize
+      />
+    )
+  }
+</Link>

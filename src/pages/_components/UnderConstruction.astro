@@ -1,0 +1,42 @@
+---
+import { Construction } from '@icons/Construction'
+
+import SEO from '@/components/SEO.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getCustomTransition } from '@/lib/customTransition'
+
+import Decorator from './Decorator.astro'
+---
+
+<BaseLayout class='text-center'>
+  <SEO
+    title='Under construction'
+    description='This page is under construction'
+    slot='seo'
+  />
+  <Decorator slot='decorator' />
+  <section
+    class='mt-16 flex min-h-[480px] flex-col items-center justify-center'
+  >
+    <div
+      class='w-fit rounded-2xl border-2 border-slate-800 bg-gradient-to-b from-slate-700 to-slate-900 p-3'
+      transition:animate={getCustomTransition()}
+    >
+      <Construction className='size-16' />
+    </div>
+    <h1
+      class='mt-8 text-[clamp(2rem,5vw,4rem)] font-semibold leading-none tracking-tight'
+      transition:animate={getCustomTransition(0.05)}
+    >
+      Under Construction
+    </h1>
+    <p
+      class='mt-4 leading-relaxed text-zinc-400 max-sm:text-sm'
+      transition:animate={getCustomTransition(0.1)}
+    >
+      This page is currently under construction. I'm working hard
+      <br class='max-sm:hidden' />
+      to bring something exciting here soon. Stay tuned!
+    </p>
+  </section>
+</BaseLayout>

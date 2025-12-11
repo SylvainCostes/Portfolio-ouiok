@@ -1,0 +1,224 @@
+---
+import { Codepen } from '@icons/Codepen'
+import { Figma } from '@icons/Figma'
+import { Location } from '@icons/Location'
+import { X } from '@icons/X'
+
+import { cn } from '@/lib/utils'
+
+import BentoBadge from './bento/BentoBadge'
+import BentoCard from './bento/BentoCard'
+import BentoItemCTA from './bento/BentoItemCTA'
+import BentoItemCurrentReading from './bento/BentoItemCurrentReading'
+import BentoItemFeaturedWork from './bento/BentoItemFeaturedWork'
+import BentoItemGithubActivity from './bento/BentoItemGithubActivity'
+import BentoItemMapLocation from './bento/BentoItemMapLocation'
+import BentoItemTechStack from './bento/BentoItemTechStack'
+import BentoItemTypingSpeed from './bento/BentoItemTypingSpeed'
+
+const socialMedias = [
+  { icon: X, href: 'https://twitter.com/sylvaincostes' },
+  { icon: Figma, href: 'https://www.figma.com/@sylvaincostes' },
+  { icon: Codepen, href: 'https://codepen.io/sylvaincostes' }
+]
+---
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const bento = document.getElementById('bento')
+
+    if (!bento) return
+
+    bento.onmousemove = (e) => {
+      for (const card of document.getElementsByClassName('card')) {
+        const rect = card.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        ;(card as HTMLDivElement).style.setProperty('--mouse-x', `${x}px`)
+        ;(card as HTMLDivElement).style.setProperty('--mouse-y', `${y}px`)
+      }
+    }
+  })
+</script>
+
+<section
+  id='bento'
+  class:list={[
+    'auto-rows-[minmax(0,1fr)] grid-cols-[repeat(36,_minmax(0,_1fr))] gap-4',
+    'flex-col max-lg:grid-cols-6 max-md:flex max-md:gap-4 md:grid'
+  ]}
+>
+  <!-- Location & social medias -->
+  <div
+    class:list={[
+      'relative col-start-1 col-end-11 row-start-1 row-end-[8] aspect-square',
+      'max-lg:col-end-3 max-lg:row-end-3'
+    ]}
+  >
+    <BentoBadge
+      className={{ component: 'absolute left-4 top-4' }}
+      text='Location'
+      icon={Location}
+    />
+    <BentoItemMapLocation className='rounded-3xl' client:only='react' />
+  </div>
+
+  <div
+    class:list={[
+      'grid grid-cols-3 gap-4',
+      'col-start-1 col-end-11 row-start-[7] row-end-[9]',
+      'max-lg:col-end-4 max-lg:row-start-3 max-lg:row-end-4'
+    ]}
+  >
+    {
+      socialMedias.map(({ icon: Icon, href }) => (
+        <BentoCard className='aspect-square'>
+          <a
+            href={href}
+            aria-label='Social media'
+            target='_blank'
+            class='flex size-full items-center justify-center rounded-3xl group-hover:text-emerald-400'
+          >
+            <Icon className='size-10' />
+          </a>
+        </BentoCard>
+      ))
+    }
+  </div>
+
+  <!-- Works -->
+  <BentoCard
+    className={cn(
+      'col-start-11 col-end-[24] row-start-1 row-end-[7]',
+      'max-lg:col-start-3 max-lg:col-end-7 max-lg:row-end-3'
+    )}
+  >
+    <BentoItemFeaturedWork />
+  </BentoCard>
+
+  <BentoCard
+    className={cn(
+      'col-start-11 col-end-[24] row-start-[7] row-end-[9]',
+      'max-lg:col-start-4 max-lg:col-end-7 max-lg:row-start-3 max-lg:row-end-4'
+    )}
+  >
+    <BentoItemCTA />
+  </BentoCard>
+
+  <!-- Currently Reading & Monkeytype -->
+  <BentoCard
+    className={cn(
+      'col-start-[24] col-end-[37] row-start-1 row-end-4',
+      'max-lg:col-start-1 max-lg:col-end-4 max-lg:row-start-4 max-lg:row-end-6'
+    )}
+  >
+    <BentoItemCurrentReading />
+  </BentoCard>
+
+  <BentoCard
+    className={cn(
+      'col-start-[24] col-end-[37] row-start-4 row-end-[9]',
+      'max-lg:col-start-4 max-lg:col-end-7 max-lg:row-start-4 max-lg:row-end-6'
+    )}
+  >
+    <!-- TODO -->
+    <BentoItemTypingSpeed server:defer>
+      <p class='p-4' slot='fallback'>Loading data...</p>
+    </BentoItemTypingSpeed>
+  </BentoCard>
+
+  <!-- Github activity & tech stack -->
+  <BentoCard
+    className={cn(
+      'col-start-1 col-end-[19] row-start-9 row-end-[15]',
+      'max-lg:col-start-1 max-lg:col-end-4 max-lg:row-start-6 max-lg:row-end-9'
+    )}
+  >
+    <!-- TODO -->
+    <BentoItemGithubActivity server:defer>
+      <p class='p-4' slot='fallback'>Loading data...</p>
+    </BentoItemGithubActivity>
+
+    <!-- <BentoItemGithubActivity client:only='react' /> -->
+  </BentoCard>
+
+  <BentoCard
+    className={cn(
+      'col-start-[19] col-end-[37] row-start-9 row-end-[15]',
+      'max-lg:col-start-4 max-lg:col-end-7 max-lg:row-start-6 max-lg:row-end-9'
+    )}
+  >
+    <BentoItemTechStack />
+  </BentoCard>
+</section>
+
+<style is:global>
+  #bento {
+    --card-border: theme(colors.slate.600);
+    --card-background: hsl(215, 26%, 7.5%);
+
+    scroll-margin: 3rem;
+  }
+
+  /* source: https://codepen.io/Hyperplexed/pen/MWQeYLW */
+  #bento:hover .card::after {
+    opacity: 1;
+  }
+
+  .card {
+    /* border */
+    background-color: theme(colors.slate.800);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .card:hover::before {
+    opacity: 1;
+  }
+
+  .card::before,
+  .card::after {
+    border-radius: inherit;
+    content: '';
+    height: 100%;
+    left: 0px;
+    opacity: 0;
+    position: absolute;
+    top: 0px;
+    transition: opacity 500ms;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .card::before {
+    background: radial-gradient(
+      800px circle at var(--mouse-x) var(--mouse-y),
+      rgba(255, 255, 255, 0.06),
+      transparent 40%
+    );
+    z-index: 3;
+  }
+
+  .card::after {
+    /* border hover */
+    background: radial-gradient(
+      600px circle at var(--mouse-x) var(--mouse-y),
+      var(--card-border),
+      transparent 50%
+    );
+    z-index: 1;
+  }
+
+  .card > .card-content {
+    /* card background */
+    background-color: var(--card-background);
+    border-radius: inherit;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    inset: 1px;
+    z-index: 2;
+  }
+</style>

@@ -1,0 +1,211 @@
+---
+year: 2024
+title: 'Bookmarked: Your Go-To Tool for Curating Tweets in Notion'
+htmlTitle: 'Bookmarked: Your Go-To Tool for\nCurating Tweets in Notion'
+description: 'A full-stack application that enables users to save tweets to Notion via Telegram bot.'
+heroImage: '../../assets/project_bookmarked_1.png'
+links:
+  - name: 'Website'
+    icon: 'Web'
+    url: 'https://bookmarked.jestsee.com'
+  - name: 'Telegram'
+    icon: 'Telegram'
+    url: 'https://t.me/bookmarked_as_bot'
+---
+
+import { Nestjs } from '@icons/NestJs'
+import { NextJs } from '@icons/NextJs'
+import { Notion } from '@icons/Notion'
+import { TelegramFilled } from '@icons/TelegramFilled'
+
+import GithubCard from '@/components/GithubCard.astro'
+import Image from '@/components/Image/Image.astro'
+import LinkCard from '@/components/LinkCard.astro'
+import TweetCard from '@/components/TweetCard/TweetCard.astro'
+import { Tooltip } from '@/components/ui/tooltip'
+
+import image2 from '../../assets/project_bookmarked_2.png'
+import image3 from '../../assets/project_bookmarked_3.png'
+import image4 from '../../assets/project_bookmarked_4.png'
+
+## Overview
+
+Bookmarked is a personal bookmarking tool inspired by <Tooltip content='A powerful bookmarking tool for saving tweets to Notion, built by [@Abdulhade_Ahmad](https://x.com/Abdulhade_Ahmad)' isMarkdownContent client:only='react'>[Save to Notion](https://x.com/savetonotion)</Tooltip>. It features a web interface and a Telegram bot as clients, enabling users to save tweets and threads simply by forwarding URLs. The backend retrieves content from Twitter using web scraping.
+
+Curious about what it looks like in action? Check out my personal collection of bookmarked tweets [here](https://jestsee.notion.site/2ff537b5ef014dac8630e6bb8691c0a3?v=5a27ef015c954e96819f4aad99ce80c2).
+
+## Goals and Motivation
+
+X (formerly known as Twitter) is a _treasure trove_ of tech insights and tips, and I often found myself collecting valuable information there. Initially, I used the `like` button to save these tweets, but retrieving specific information later became _tedious and inefficient_.
+
+That's when I discovered Save to Notion, which was a game changer. It combined the best of both worlds—useful information and an organized second brain, making it easy to retrieve saved content.
+
+While it served its purpose, as a _free user_, I encountered several limitations. The biggest inconvenience was the need to publicly mention the SaveToNotion Twitter bot in a reply to save a tweet or thread.
+
+<TweetCard
+  tweetId='1660421340665458692'
+  id='embedded-tweet'
+  class='scroll-mt-24'
+/>
+
+So, I built my own bookmarking tool to save tweets to Notion, tailored to my preferences. Using a Telegram bot as the client, it allows me to forward tweet links directly to the bot, especially on mobile devices, without the need for public mentions.
+
+## Meet my NT Stacks
+
+Notion, Next.js, NestJS, and Telegram divided into three repositories: backend, full-stack web application, and Telegram bot.
+
+### <Notion />Notion
+
+Stores all bookmarked tweets. Each tweet or thread is saved as an individual page in a Notion database with the following properties: Author, Tags, Tweet Date, Tweet Link, and Type (Tweet/Thread).
+
+### <Nestjs />NestJS
+
+Powers the back-end, built with TypeScript for enhanced type safety. This project was my introduction to NestJS, offering a great learning experience.
+
+- **Puppeteer**: Utilized as a headless browser for web scraping.
+- **BullMQ**: Handles queue management for the scraping process, seamlessly integrated with NestJS.
+- **EventEmitter2**: Constructs <Tooltip content='Server-Sent Events (SSE) allow servers to push real-time updates to the browser over a single HTTP connection.' withUnderline client:only="react">SSE</Tooltip> responses to send real-time updates to the client.
+
+### <NextJs />Next.js
+
+Builds the web app and handles authentication using [Auth.js](https://authjs.dev/). It also manages user data and acts as a proxy to communicate with the NestJS backend.
+
+### <TelegramFilled />Telegram
+
+Functions as the client for submitting bookmark requests and receiving responses about bookmark status. Built using [Telegraf.js](https://telegraf.js.org/), it provides a convenient interface for mobile users to forward tweet links effortlessly.
+
+## Features
+
+### Save Tweets Privately
+
+No need to mention a Twitter bot publicly—just easily forward the tweet or thread’s URL to the Telegram bot.
+
+### Never Lose Your Bookmarked Tweet Again
+
+The media might get deleted if the author deletes their post, private or deactivates their account, but not the text content. After successfully bookmarking a tweet, it will remain there forever unless you delete it manually.
+
+### Reading Experience
+
+Say goodbye to the "Show more" button. Once saved to Notion, you can read a long thread conveniently without having to press the "Show more" button to expand each tweet's full content.
+
+<div className='flex items-start gap-4 max-sm:flex-col'>
+  <div>
+    **From this**
+    <Image
+      src={image2}
+      alt='Tweet thread with "Show more" button to expand each tweet content'
+      title='Tweet thread with "Show more" button to expand each tweet content'
+      wrapperProps={{ class: 'not-prose -mt-2 rounded-md overflow-clip' }}
+      ambientMode
+    />
+  </div>
+  <div>
+    **to this**
+    <Image
+      src={image3}
+      alt='Bookmarked tweet thread with full content'
+      title='Bookmarked tweet thread with full content'
+      wrapperProps={{ class: 'not-prose -mt-2 rounded-md overflow-clip' }}
+      ambientMode
+    />
+  </div>
+</div>
+
+### Easily Organize and Share Your Bookmarks Collection
+
+Customize how you view your bookmarked tweets. Organize them by tags, display them as a list or table, and explore a variety of options. Transform your collection into a public site that anyone can access. Share your bookmarks with friends, including long threads, even with those who don’t use Twitter—_no account needed to read them!_
+
+### Real-Time Bookmarking Process Updates
+
+Get live updates on the progress of which tweet is currently being scraped and how many tweets have been successfully processed. _Currently, this feature is only available on the web._
+
+## Challenges and How I Overcame Them
+
+### Twitter API Costs vs. Web Scraping: My Workaround
+
+As someone who can't justify paying for the Twitter API just for this personal project, I decided to try web scraping instead. At first, I was skeptical about this method. My initial approach was to scrape the HTML and manually parse it. To do so, I had to wait until the page fully loaded. Plus, I could only scrape one tweet at a time, which was very time-consuming.
+
+Then, I wondered if it would be possible to scrape the API response instead.
+
+> _Turns out, it was!_ &nbsp;🥳
+
+Fortunately, Puppeteer provides an interface to listen to network activity. This made the scraping process much faster since I didn’t have to wait for the entire page to load. The best part? The data was already structured in JSON format, so it required less effort to map compared to raw HTML.
+
+TMI, there’s actually an easier way to get tweet data without web scraping, which I only discovered after finishing this project 🤡. You can check out [this video](https://youtu.be/HInd4QQrgKI?si=LfNlFmzug1DB2nUu) for more details. I’ve already tried it and used it to embed [this tweet](#embedded-tweet). Well, at least it was a nice try, right?
+
+### Vercel Free Plan limitations
+
+As mentioned [earlier](#nestjs), my Next.js app acts as a proxy for my NestJS backend, including forwarding SSE responses from the backend to the web client. In this process, the server side of the Next.js app first receives the SSE response from the NestJS backend. It then forwards this response to the client side of the Next.js app.
+
+<Image
+  src={image4}
+  alt='SSE response flow from the backend to the web client'
+  title='SSE response flow from the backend to the web client'
+  wrapperProps={{ class: 'not-prose my-2 rounded-md overflow-clip' }}
+/>
+
+Typically, consuming SSE happens directly in the browser using the [EventSource Web API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource).
+
+> [And EventSource _does not exist on Node_](https://stackoverflow.com/questions/72934037/how-to-fix-eventsource-not-defined-error) &nbsp;🙃
+
+To address this limitation, the [EventSource](https://www.npmjs.com/package/eventsource) package allows EventSource to work in a Node.js environment. While this solution works perfectly in my local environment, it breaks when deployed to Vercel 🙃.
+
+The issue arises because Vercel's free plan <Tooltip content='Runs on the [Node.js runtime](https://vercel.com/docs/functions/runtimes#node.js), providing access to Node.js APIs, with configurable machine resources and dependencies for handling backend tasks.' isMarkdownContent withUnderline client:only="react">serverless functions</Tooltip> have a **60-second** connection timeout, which can be limiting, especially when scraping longer threads that require more time. Although <Tooltip content='Executes at the network edge, closer to users, using the [Edge runtime](https://vercel.com/docs/functions/runtimes/edge-runtime). It supports a limited set of Node.js APIs.' isMarkdownContent withUnderline client:only="react">Edge Functions</Tooltip> do not have this limitation, they lack support for the EventSource package, as it requires a Node.js runtime.
+
+You can read more about it here.
+
+<LinkCard url='https://vercel.com/docs/functions#choosing-the-right-runtime' />
+
+To work around these limitations, I utilized a free VPS provided by my [GitHub Student](https://education.github.com/pack) Benefits to self-host the Next.js app. This allowed me to bypass Vercel's constraints. Setting up SSL, Nginx, and Docker was a steep learning curve, especially since I needed Docker to get Puppeteer (a headless browser) running on my VPS.
+
+_Why proxy the backend through the server side of the Next.js app instead of accessing the data directly from the client side?_
+
+My NestJS backend is dedicated solely to web scraping and saving data to Notion. It doesn’t handle database operations or user information. Authentication and user management are handled by the Next.js app using [Auth.js](https://authjs.dev/). To bridge this gap, I enrich the payload on the server side of the Next.js app with user-specific data before sending it to the NestJS backend.
+
+### The Road to Restarting My Project
+
+This project actually started in 2023, but I abandoned it for almost a year. The main reason? I hadn't found anyone who had built something exactly like what I had in mind. The idea existed only in my head, but the tutorial didn’t exist though—at least not one that matched what I was trying to do. Back then, I underestimated myself.
+
+Fortunately, I decided to revisit the project, though I wasn’t entirely sure why. Perhaps it was just a matter of giving myself another chance. I began by documenting the idea clearly to make it feel more real, then broke it down into smaller, manageable parts. This made it easier to explore and conduct research, and allowed me to compile tutorials from various sources.
+
+Building something totally new with an unfamiliar tech stack while working a 9-5 job was a real challenge. I pushed myself to work as efficiently as possible, hoping to free up enough time to continue working on the project. _Balancing work, personal life, and the demands of a side project taught me valuable lessons in time management and determination_.
+
+## Future Expansions
+
+### Speeding up the Bookmarking Process
+
+The web scraping method could be replaced by the faster approach I mentioned earlier. This improvement would not only speed up the bookmarking process but also enable video embedding in Notion—something that isn't possible with the current scraping approach.
+
+### Improving the Mobile Experience
+
+Using the Notion app on my 🥔 Android phone feels a bit sluggish. To improve this, I’ve developed a personal Bookmarked Android client using Jetpack Compose and Hono.js. I may share more about this development in the future.
+
+### Preserving Tweet Media
+
+The tweet media could be stored externally, ensuring that even if the tweet is deleted or the author's account is deactivated, the media would still be accessible.
+
+## Demo
+
+<TweetCard tweetId='1849459930916630980' class='!justify-start' />
+
+## Repositories
+
+<div className='not-prose space-y-4'>
+  <GithubCard owner='jestsee' repository='bookmarked-api' />
+  <GithubCard owner='jestsee' repository='bookmarked-web' />
+  <GithubCard owner='jestsee' repository='bookmarked-telegram' />
+</div>
+
+## Outro
+
+This project has been an incredible learning experience. Every challenge I faced and overcame taught me something new. While there's still plenty of room for improvement, completing this project has boosted my confidence and made me even more excited to work on future side projects.
+
+## Start Bookmarking 🎉
+
+1. Clone the Template: Get started by cloning this [Notion template](https://jestsee.notion.site/6cf1b3b118f245869f90b705ce75aaaa?v=62adc39f47634a46b978a0a15c4dab8a).
+2. Create an Account: Head over to this [website](<(https://bookmarked.jestsee.com)>) and sign up.
+3. Connect Your Notion: Sign in and link your Notion account.
+4. Use the [Telegram bot](https://t.me/bookmarked_as_bot) to bookmark tweets effortlessly.
+5. Start Bookmarking!
+
+I’d love to hear your thoughts on this project! Feel free to connect with me on [Twitter](https://x.com/jestseee). 😊

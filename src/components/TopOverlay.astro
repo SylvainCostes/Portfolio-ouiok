@@ -1,0 +1,21 @@
+<div class='dotted-gradient fixed left-0 top-0 z-30 !m-0 h-16 w-full sm:h-28'>
+</div>
+
+<style>
+  .dotted-gradient {
+    --dotted-color: #0d0d12;
+
+    background-color: transparent;
+    background-image: radial-gradient(
+      transparent 1px,
+      var(--dotted-color, #ffffff) 1px
+    );
+    background-size: 2px 2px;
+
+    backdrop-filter: blur(5px);
+    mask: linear-gradient(rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0) 100%);
+    opacity: 1;
+
+    pointer-events: none;
+  }
+</style>

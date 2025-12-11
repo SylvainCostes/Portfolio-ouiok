@@ -1,0 +1,41 @@
+---
+import Image from './Image'
+import Link from './Link'
+
+interface Props {
+  name?: string
+  avatar?: string
+  timeToRead?: number
+}
+
+const {
+  timeToRead = 5,
+  avatar = 'https://pbs.twimg.com/profile_images/1844918502857244678/oOYskFVA_400x400.jpg',
+  name = 'Sylvain Costes'
+} = Astro.props
+---
+
+<Link
+  href='https://x.com/jestseee'
+  target='_blank'
+  class='space-y-3 text-slate-200'
+>
+  <p class='font-display text-lg'>Written by</p>
+  <div class='flex items-center gap-3'>
+    <Image
+      src={avatar}
+      alt="Author's avatar"
+      class='size-12'
+      wrapperProps={{
+        class: 'rounded-full outline outline-zinc-800'
+      }}
+      inferSize
+    />
+    <span class='flex-1 text-slate-400'>
+      <p class='font-medium text-zinc-200'>{name}</p>
+      <p class='text-sm text-slate-400/80'>
+        {Math.ceil(timeToRead)} min read
+      </p>
+    </span>
+  </div>
+</Link>

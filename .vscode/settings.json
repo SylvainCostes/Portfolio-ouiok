@@ -1,0 +1,22 @@
+{
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "astro",
+    "typescript",
+    "typescriptreact"
+  ],
+  "prettier.documentSelectors": ["**/*.astro"],
+  "[astro]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "tailwindCSS.classAttributes": [
+    ".*class*",
+    "class:list",
+    "className",
+    ".*Class"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    "(?:wrapperProps)\\s*=\\s*\\{\\{\\s*class:\\s*['\"]([^'\"]+)['\"]\\s*\\}\\}"
+  ]
+}

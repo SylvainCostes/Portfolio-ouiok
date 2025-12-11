@@ -1,0 +1,36 @@
+---
+import type { InferEntrySchema } from 'astro:content'
+
+import Link from '@/components/Link'
+import { PROJECT_ICONS, type ProjectIcon } from '@/content/_icons'
+
+interface Props {
+  links: InferEntrySchema<'projects'>['links']
+}
+
+const { links } = Astro.props
+---
+
+<ul class='flex flex-wrap gap-2 sm:gap-4'>
+  {
+    links.map(({ icon, url, name }) => {
+      const Icon = PROJECT_ICONS[icon as ProjectIcon]
+      return (
+        <li>
+          <Link
+            href={url}
+            target='_blank'
+            class:list={[
+              'flex items-center gap-2 rounded-lg text-sm text-zinc-300/85 max-sm:text-xs',
+              'border border-zinc-800 px-3 py-1.5 transition-all duration-200',
+              'bg-gradient-to-t from-zinc-800/50 to-zinc-800/0',
+              'hover:border-zinc-700 hover:from-zinc-800 hover:text-zinc-300'
+            ]}
+          >
+            <Icon className='size-3' /> {name}
+          </Link>
+        </li>
+      )
+    })
+  }
+</ul>

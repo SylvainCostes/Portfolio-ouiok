@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content'
+
+import FancyLink from '@/components/FancyLink.astro'
+import ProjectCard from '@/components/ProjectCard'
+import ProjectHeader from '@/components/ProjectHeader.astro'
+import { getCustomTransition } from '@/lib/customTransition'
+
+const projects = await getCollection('projects')
+---
+
+<section id='projects' class='mt-40 scroll-mt-16'>
+  <div class='items-center justify-between gap-4 lg:flex'>
+    <ProjectHeader forHomePage />
+    <FancyLink class='max-lg:hidden' href='/projects'
+      >View all projects</FancyLink
+    >
+  </div>
+  <div
+    class='mt-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-3'
+    transition:animate={getCustomTransition(0.2)}
+  >
+    {projects.map(({ id, data }) => <ProjectCard slug={id} {...data} />)}
+  </div>
+</section>
