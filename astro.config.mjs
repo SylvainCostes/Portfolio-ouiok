@@ -5,16 +5,11 @@ import partytown from '@astrojs/partytown'
 import react from '@astrojs/react'
 import sitemap from '@astrojs/sitemap'
 import tailwind from '@astrojs/tailwind'
-import vercel from '@astrojs/vercel'
 import { defineConfig, envField, passthroughImageService } from 'astro/config'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeSlug from 'rehype-slug'
 
-let adapter = vercel()
-
-if (process.argv[3] === '--node' || process.argv[4] === '--node') {
-  adapter = node({ mode: 'standalone' })
-}
+const adapter = node({ mode: 'standalone' })
 
 // https://astro.build/config
 export default defineConfig({
@@ -65,22 +60,7 @@ export default defineConfig({
         optional: true
       }),
 
-      PUBLIC_VERCEL_ENV: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true,
-        default: 'development'
-      }),
-      PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true
-      }),
-      PUBLIC_VERCEL_URL: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true
-      })
+
     }
   },
 

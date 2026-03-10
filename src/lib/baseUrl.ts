@@ -1,5 +1,5 @@
-import { PUBLIC_VERCEL_PROJECT_PRODUCTION_URL } from 'astro:env/client'
-
-const url = PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
-
-export const BASE_URL = url ? `https://${url}` : 'http://localhost:4321'
+// Server-side: use the configured site URL. Client-side: use origin (for API calls).
+export const BASE_URL =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : (import.meta.env.SITE ?? 'http://localhost:4321')

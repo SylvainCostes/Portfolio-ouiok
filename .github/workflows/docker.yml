@@ -43,3 +43,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest image and restart container
+        run: |
+          docker pull sylvaincostes/portfolio:latest
+          docker restart portfolio-app
