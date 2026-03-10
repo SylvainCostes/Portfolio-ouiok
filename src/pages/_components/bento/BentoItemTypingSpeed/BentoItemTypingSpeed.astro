@@ -1,11 +1,7 @@
 ---
-import client from '@/lib/client'
-
 import BentoItemTypingSpeedContent from './BentoItemTypingSpeedContent'
-
-const data = await client.api.monkeytype.$get().then((res) => res.json()).catch(() => null)
 
 Astro.response.headers.set('Cache-Control', 'public, max-age=86400')
 ---
 
-{data && <BentoItemTypingSpeedContent {...data} client:only='react' />}
+<BentoItemTypingSpeedContent client:only='react' />

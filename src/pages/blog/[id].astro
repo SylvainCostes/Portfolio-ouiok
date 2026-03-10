@@ -5,7 +5,6 @@ import readingTime from 'reading-time'
 
 import ContentWrapper from '@/components/ContentWrapper.astro'
 import BlogLayout from '@/layouts/BlogLayout'
-import getLastUpdatedTimeByFile from '@/pages/api/_services/github/lastUpdatedFile'
 
 export const getStaticPaths = (async () => {
   const blogEntries = await getCollection('blog')
@@ -21,22 +20,12 @@ export const getStaticPaths = (async () => {
 const { entry } = Astro.props
 const { Content, headings } = await render(entry)
 
-let latestCommitUrl: string | undefined
-let lastUpdatedTime: string | undefined
-try {
-  ;({ latestCommitUrl, lastUpdatedTime } = await getLastUpdatedTimeByFile(`blog/${entry.id}.mdx`))
-} catch {
-  // token not available at build time — skip
-}
-
 const { minutes } = readingTime(entry.body!)
 ---
 
 <BlogLayout
   headings={headings}
   id={entry.id}
-  updatedDate={lastUpdatedTime ? new Date(lastUpdatedTime) : undefined}
-  latestCommitUrl={latestCommitUrl}
   readingTime={Math.ceil(minutes)}
   {...entry.data}
 >

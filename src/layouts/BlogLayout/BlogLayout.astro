@@ -6,6 +6,7 @@ import type { InferEntrySchema } from 'astro:content'
 import BlogInfo from '@/components/BlogInfo.astro'
 import { ArrowOutward } from '@/components/icons/ArrowOutward'
 import Image from '@/components/Image'
+import LastUpdatedFile from '@/components/LastUpdatedFile'
 import Link, { LinkArticle } from '@/components/Link'
 import SEO from '@/components/SEO.astro'
 import { BASE_URL } from '@/lib/baseUrl'
@@ -26,8 +27,8 @@ const {
   description,
   heroImage,
   pubDate,
-  updatedDate,
-  latestCommitUrl,
+  updatedDate: _updatedDate,
+  latestCommitUrl: _latestCommitUrl,
   tags,
   readingTime
 } = Astro.props
@@ -97,19 +98,7 @@ const {
       ]}
     >
       <slot />
-      {
-        updatedDate && (
-          <p class='!mt-8 text-zinc-500'>
-            Last updated on {formatDateByTimeZone(updatedDate)} UTC+7.
-            {latestCommitUrl && (
-              <LinkArticle href={latestCommitUrl}>
-                See Changelog{''}
-                <ArrowOutward className='inline-block size-3 ml-1' />
-              </LinkArticle>
-            )}
-          </p>
-        )
-      }
+      <LastUpdatedFile filePath={`blog/${id}.mdx`} client:only='react' />
     </article>
   </section>
 

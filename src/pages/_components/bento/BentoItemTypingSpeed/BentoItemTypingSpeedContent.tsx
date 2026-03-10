@@ -2,9 +2,11 @@ import { Monkeytype } from '@icons/Monkeytype'
 import { Target } from '@icons/Target'
 import { Timer } from '@icons/Timer'
 import { Translate } from '@icons/Translate'
+import useSWR from 'swr'
 
+import client from '@/lib/client'
 import { Tooltip } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn, fetcher } from '@/lib/utils'
 import type { MonkeyTypeData, MonkeyTypeLanguage } from '@/types'
 
 import BentoBadge from '../BentoBadge'
@@ -42,9 +44,22 @@ export const TypingDetail = ({
   )
 }
 
-interface Props extends MonkeyTypeData { }
+interface Props {}
 
-const TypingSpeed = (props: Props) => {
+const TypingSpeed = (_props: Props) => {
+  const { data, error } = useSWR<MonkeyTypeData>(
+    'monkeytype',
+    fetcher(() => client.api.monkeytype.$get())
+  )
+
+  if (error || !data) {
+    return (
+      <div className='flex h-full items-center justify-center'>
+        <p className='text-sm text-slate-400'>{error ? 'Something went wrong 😔' : 'Loading...'}</p>
+      </div>
+    )
+  }
+
   return (
     <a
       href='https://monkeytype.com/profile/LZ5'
@@ -58,7 +73,7 @@ const TypingSpeed = (props: Props) => {
           'bg-gradient-to-b from-[#1E293B] to-[var(--card-background)] bg-clip-text'
         )}
       >
-        {props.wpm}
+        {data.wpm}
       </p>
       <BentoBadge
         icon={Monkeytype}
@@ -68,12 +83,12 @@ const TypingSpeed = (props: Props) => {
       <div>
         <div className='flex items-baseline'>
           <p className='font-display text-[84px] font-medium leading-tight tracking-normal'>
-            {props.wpm}
+            {data.wpm}
           </p>
           <p className='ml-2 text-2xl leading-none'>wpm</p>
         </div>
         <div className='flex gap-4'>
-          {mapTypingDetailData(props).map((item) => (
+          {mapTypingDetailData(data).map((item) => (
             <TypingDetail key={item.category} {...item} />
           ))}
         </div>

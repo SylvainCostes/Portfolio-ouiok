@@ -1,9 +1,5 @@
 ---
-import client from '@/lib/client'
-
 import BentoItemCurrentReadingReact from './BentoItemCurrentReading'
-
-const initialData = await client.api.reading.$get().then((res) => res.json()).catch(() => undefined)
 ---
 
-<BentoItemCurrentReadingReact initialData={initialData} client:only='react' />
+<BentoItemCurrentReadingReact client:only='react' />

@@ -5,6 +5,7 @@ import type { MarkdownHeading } from 'astro'
 import type { InferEntrySchema } from 'astro:content'
 
 import Image from '@/components/Image'
+import LastUpdatedFile from '@/components/LastUpdatedFile'
 import Link, { LinkArticle } from '@/components/Link'
 import SEO from '@/components/SEO.astro'
 import TableOfContent from '@/components/TableOfContent'
@@ -30,8 +31,8 @@ const {
   htmlTitle: _htmlTitle,
   headings,
   slug,
-  updatedDate,
-  latestCommitUrl,
+  updatedDate: _updatedDate,
+  latestCommitUrl: _latestCommitUrl,
   links,
   tags
 } = Astro.props
@@ -120,19 +121,7 @@ const htmlTitle = _htmlTitle.replace(
       ]}
     >
       <slot />
-      {
-        updatedDate && (
-          <p class='!mt-8 text-zinc-500'>
-            Last updated on {formatDateByTimeZone(updatedDate)} UTC+7.
-            {latestCommitUrl && (
-              <LinkArticle href={latestCommitUrl}>
-                See Changelog{''}
-                <ArrowOutward className='inline-block size-3 ml-1' />
-              </LinkArticle>
-            )}
-          </p>
-        )
-      }
+      <LastUpdatedFile filePath={`projects/${slug}.mdx`} client:only='react' />
     </article>
 
     <aside class='w-60 shrink-0 space-y-8 max-lg:hidden'>

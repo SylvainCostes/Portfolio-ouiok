@@ -5,7 +5,6 @@ import readingTime from 'reading-time'
 
 import ContentWrapper from '@/components/ContentWrapper.astro'
 import ProjectLayout from '@/layouts/ProjectLayout'
-import getLastUpdatedTimeByFile from '@/pages/api/_services/github/lastUpdatedFile'
 
 interface Props extends InferGetStaticPropsType<typeof getStaticPaths> {}
 
@@ -21,14 +20,6 @@ export const getStaticPaths = (async () => {
 const { entry } = Astro.props
 const { Content, headings } = await render(entry)
 
-let latestCommitUrl: string | undefined
-let lastUpdatedTime: string | undefined
-try {
-  ;({ latestCommitUrl, lastUpdatedTime } = await getLastUpdatedTimeByFile(`projects-fr/${entry.id}.mdx`))
-} catch {
-  // token not available at build time — skip
-}
-
 const { minutes, words } = readingTime(entry.body!)
 ---
 
@@ -37,8 +28,6 @@ const { minutes, words } = readingTime(entry.body!)
   slug={entry.id}
   readingTime={Math.ceil(minutes)}
   wordsCount={words}
-  updatedDate={lastUpdatedTime ? new Date(lastUpdatedTime) : undefined}
-  latestCommitUrl={latestCommitUrl}
   {...entry.data}
 >
   <ContentWrapper content={Content} />

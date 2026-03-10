@@ -3,21 +3,17 @@ import useSWR from 'swr'
 
 import client from '@/lib/client'
 import { cn, fetcher } from '@/lib/utils'
-import type { ReadingData } from '@/pages/api/_services/reading'
 
 import BentoBadge from '../BentoBadge'
 
-interface Props {
-    initialData?: ReadingData
-}
+interface Props {}
 
-const BentoItemCurrentReading = ({ initialData }: Props) => {
+const BentoItemCurrentReading = (_props: Props) => {
     const { data, error } = useSWR(
         'reading',
         fetcher(() => client.api.reading.$get()),
         {
-            refreshInterval: 60000, // Rafraîchir toutes les minutes
-            fallbackData: initialData
+            refreshInterval: 60000
         }
     )
 

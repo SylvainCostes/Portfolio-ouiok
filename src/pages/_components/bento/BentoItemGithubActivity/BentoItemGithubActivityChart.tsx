@@ -1,8 +1,10 @@
 import { Github } from '@icons/Github'
 import HeatMap, { type SVGProps } from '@uiw/react-heat-map'
 import React from 'react'
+import useSWR from 'swr'
 
-import { formatDate, formatNumber, getDateSuffix } from '@/lib/utils'
+import client from '@/lib/client'
+import { fetcher, formatDate, formatNumber, getDateSuffix } from '@/lib/utils'
 import type { GithubContributionData } from '@/types'
 
 import BentoBadge from '../BentoBadge'
@@ -33,13 +35,24 @@ const renderRect =
     )
   }
 
-interface Props extends GithubContributionData {}
+interface Props {}
 
-const BentoGithubActivity = (props: Props) => {
-  const defaultValue = `${formatNumber(props.totalContributions)} contributions in the last year`
-  const [hoveredTile, setHoveredTile] = React.useState<string | null>(
-    defaultValue
+const BentoGithubActivity = (_props: Props) => {
+  const { data, error } = useSWR<GithubContributionData>(
+    'github-contributions',
+    fetcher(() => client.api.github.contributions.$get())
   )
+
+  if (error || !data) {
+    return (
+      <div className='flex h-full items-center justify-center'>
+        <p className='text-sm text-slate-400'>{error ? 'Something went wrong 😔' : 'Loading...'}</p>
+      </div>
+    )
+  }
+
+  const defaultValue = `${formatNumber(data.totalContributions)} contributions in the last year`
+  const [hoveredTile, setHoveredTile] = React.useState<string | null>(defaultValue)
 
   return (
     <div className='relative flex h-full flex-col justify-between px-4 pb-5 pt-4 max-md:gap-4'>
@@ -52,7 +65,7 @@ const BentoGithubActivity = (props: Props) => {
           {...getDateProps()}
           onMouseLeave={() => setHoveredTile(defaultValue)}
           className='w-[550px]'
-          value={props.contributions ?? []}
+          value={data.contributions ?? []}
           weekLabels={false}
           monthLabels={false}
           legendCellSize={0}
@@ -69,11 +82,9 @@ const BentoGithubActivity = (props: Props) => {
           }}
         />
       </div>
-      {
-        <p className='text-sm text-slate-200 max-sm:text-xs sm:max-lg:mt-4'>
-          Last pushed on {formatDate(new Date(props.lastPushedAt))}
-        </p>
-      }
+      <p className='text-sm text-slate-200 max-sm:text-xs sm:max-lg:mt-4'>
+        Last pushed on {formatDate(new Date(data.lastPushedAt))}
+      </p>
     </div>
   )
 }
