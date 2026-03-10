@@ -22,6 +22,18 @@ export default defineConfig({
   output: 'static',
   site: 'https://sylvaincostes.fr',
 
+  image: {
+    domains: ['images.unsplash.com', 'res.cloudinary.com', 'plus.unsplash.com']
+  },
+
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    routing: {
+      prefixDefaultLocale: false
+    }
+  },
+
   markdown: {
     shikiConfig: {
       theme: 'poimandres'

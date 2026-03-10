@@ -1,0 +1,138 @@
+---
+year: 2024
+title: 'Aegis Protocol — Smart Contracts de Gouvernance DAO'
+htmlTitle: 'Aegis Protocol —\nGouvernance DAO'
+description: 'Protocole de gouvernance décentralisé avec smart contracts Solidity : propositions on-chain, vote pondéré par token, exécution timelock, et suite de tests Hardhat.'
+heroImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - Solidity
+  - Hardhat
+  - Ethers.js
+  - ERC-20
+  - OpenZeppelin
+  - Smart Contracts
+  - Web3
+  - DAO
+links:
+  - name: 'GitHub'
+    icon: 'Github'
+    url: 'https://github.com/sylvaincostes/aegis-protocol'
+---
+
+## Concept
+
+**Aegis Protocol** est un système de gouvernance DAO (Organisation Autonome Décentralisée) qui permet aux détenteurs de tokens de proposer, voter et exécuter des changements de protocole — entièrement on-chain, sans intermédiaire de confiance.
+
+Le défi dans la conception d'une DAO est de prévenir les attaques de gouvernance : une baleine qui acquiert des tokens juste avant un vote, vote pour une proposition malveillante, puis dump les tokens. Aegis adresse cela avec un mécanisme de snapshot et un exécuteur timelock.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Stack Gouvernance Aegis               │
+│                                                         │
+│  ┌──────────────────┐    ┌───────────────────────────┐  │
+│  │   AegisToken     │    │    AegisGovernor          │  │
+│  │   (ERC-20 +      │    │  (OpenZeppelin Governor)  │  │
+│  │    ERC-20Votes)  │    │  - propose()              │  │
+│  │                  │───▶│  - castVote()             │  │
+│  │  pouvoir de vote │    │  - execute()              │  │
+│  │  = snapshot passé│    │  - quorum : 4% du supply  │  │
+│  └──────────────────┘    └──────────┬────────────────┘  │
+│                                     │ met en file        │
+│                          ┌──────────▼────────────────┐  │
+│                          │    TimelockController      │  │
+│                          │  MinDelay : 2 jours        │  │
+│                          │  Executor : governor only  │  │
+│                          └───────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+Le **timelock** est critique : même si une proposition malveillante passe le vote, il y a un délai de 2 jours avant l'exécution. Cela donne aux détenteurs honnêtes le temps de sortir ou de contrer l'attaque.
+
+---
+
+## AegisToken — Token de Gouvernance
+
+```solidity
+// contracts/AegisToken.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title AegisToken
+ * @dev Token de gouvernance ERC-20 avec délégation de vote et support snapshot.
+ *
+ * Le pouvoir de vote est basé sur le solde de tokens au bloc de snapshot de la proposition,
+ * PAS au moment du vote — prévient les attaques d'acquisition de tokens de dernière minute.
+ */
+contract AegisToken is ERC20Votes, Ownable {
+    uint256 public constant MAX_SUPPLY = 1_000_000 * 10**18; // 1M tokens
+
+    constructor(address initialOwner)
+        ERC20("Aegis Protocol Token", "AEGIS")
+        EIP712("Aegis Protocol Token", "1")
+        Ownable(initialOwner)
+    {
+        _mint(initialOwner, MAX_SUPPLY);
+    }
+
+    function _update(address from, address to, uint256 value)
+        internal override(ERC20Votes)
+    {
+        super._update(from, to, value);
+    }
+}
+```
+
+---
+
+## Suite de Tests Hardhat
+
+```javascript
+// test/Governance.test.js
+describe("Aegis Governance", function () {
+  it("Devrait permettre de proposer et voter", async function () {
+    const [owner, voter1, voter2] = await ethers.getSigners()
+
+    // Déléguer les votes à soi-même
+    await token.connect(voter1).delegate(voter1.address)
+    await token.connect(voter2).delegate(voter2.address)
+
+    // Avancer d'un bloc (le snapshot se produit au bloc de création)
+    await mine(1)
+
+    // Créer une proposition
+    const proposalId = await governor.propose(
+      [token.address],
+      [0],
+      [calldata],
+      "Proposition de test"
+    )
+
+    // Avancer jusqu'à la période de vote
+    await mine(VOTING_DELAY + 1)
+
+    // Voter
+    await governor.connect(voter1).castVote(proposalId, 1) // Pour
+    await governor.connect(voter2).castVote(proposalId, 0) // Contre
+
+    // Vérifier le résultat
+    const state = await governor.state(proposalId)
+    expect(state).to.equal(ProposalState.Active)
+  })
+})
+```
+
+---
+
+## Apprentissages
+
+Ce projet m'a appris à penser la sécurité des smart contracts comme une contrainte de conception, pas une réflexion après coup. Chaque fonction publique est un vecteur d'attaque potentiel. La propriété `snapshotBlock` pour les votes, le délai timelock avant exécution, la limite de quorum — chacun de ces choix de conception existe pour contrer une classe d'attaque spécifique.

@@ -19,13 +19,25 @@ const { year, title, description, slug, heroImage, heroImageAlign } =
 ---
 
 <Link href={`projects/${slug}`} class='group space-y-6'>
-  <Image
-    src={heroImage}
-    alt={title}
-    align={heroImageAlign}
-    class='aspect-[1.75] transition-all duration-800 group-hover:scale-105'
-    wrapperProps={{ class: 'rounded-lg overflow-clip' }}
-  />
+  {typeof heroImage === 'string' ? (
+    <Image
+      src={heroImage}
+      alt={title}
+      align={heroImageAlign}
+      width={800}
+      height={457}
+      class='aspect-[1.75] transition-all duration-800 group-hover:scale-105'
+      wrapperProps={{ class: 'rounded-lg overflow-clip' }}
+    />
+  ) : (
+    <Image
+      src={heroImage}
+      alt={title}
+      align={heroImageAlign}
+      class='aspect-[1.75] transition-all duration-800 group-hover:scale-105'
+      wrapperProps={{ class: 'rounded-lg overflow-clip' }}
+    />
+  )}
   <div class='flex flex-col gap-4'>
     <p>{year}</p>
     <!-- should we use heading here? -->

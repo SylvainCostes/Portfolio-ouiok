@@ -1,0 +1,102 @@
+---
+year: 2024
+title: 'Personal Homelab — Self-Hosted GitOps Infrastructure'
+htmlTitle: 'Personal Homelab —\nSelf-Hosted GitOps'
+description: 'Zero-trust self-hosted infrastructure on Raspberry Pi 4: Traefik, Docker, Cloudflare Tunnel, Gitea CI/CD. This portfolio runs on it.'
+heroImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2670&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+tags:
+  - Raspberry Pi
+  - Docker
+  - Traefik
+  - Cloudflare Tunnel
+  - Gitea Actions
+  - Portainer
+  - Watchtower
+  - Zero Trust
+  - Self-Hosted
+links:
+  - name: 'Full Write-up'
+    icon: 'Web'
+    url: '/blog/homelab-raspberry-pi-devops'
+---
+
+## Overview
+
+A self-hosted infrastructure running on a **Raspberry Pi 4 (8GB)** that serves as my personal DevOps sandbox. The entire stack uses production-grade patterns: GitOps for deployments, Cloudflare Zero Trust for secure external access, and automated monitoring with alerting.
+
+This project is a living experiment — every pattern I apply at work (ArgoCD, Helm, GitOps) gets field-tested here first, without a safety net.
+
+---
+
+## Stack at a Glance
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Raspberry Pi 4 · 8GB RAM · 256GB SSD (USB 3.0)    │
+│                                                     │
+│  Cloudflare Tunnel ──▶ Traefik ──▶ Services         │
+│                         (reverse proxy + TLS)       │
+│                                                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │Portainer │ │  Gitea   │ │  Uptime  │            │
+│  │(Docker UI)│ │(Git+CI/CD)│ │  Kuma   │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │Nextcloud │ │Vault-    │ │Watch-    │            │
+│  │(files)   │ │warden   │ │tower    │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Design Decisions
+
+**Cloudflare Tunnel** over open ports — No port forwarding in the router, no exposed IP, DDoS protection by default, and free TLS certificates for all subdomains.
+
+**Traefik** with Docker label-based routing — Adding a new service to the platform is a one-liner in the docker-compose. Traefik auto-discovers it through Docker socket.
+
+**Gitea Actions** for CI/CD — Self-hosted runners, no GitHub Actions minutes burned. The same YAML syntax, so skills transfer directly to professional contexts.
+
+---
+
+## CI/CD Pipeline Example
+
+```yaml
+# .gitea/workflows/deploy.yml
+name: Deploy Service
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t ${{ secrets.REGISTRY }}/my-service:${{ github.sha }} .
+
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.REGISTRY }}/my-service:latest
+            docker compose -f /opt/services/my-service/compose.yml up -d
+            docker image prune -f
+```
+
+---
+
+## What This Teaches That Production Doesn't
+
+Running your own infra forces you to care about things that managed services abstract away: SD card wear levels, log rotation preventing disk fill, unattended-upgrades without breaking running containers, and the real cost of not having a health check on a slow-starting service.
+
+**Read the full technical write-up** → [homelab-raspberry-pi-devops](/blog/homelab-raspberry-pi-devops)

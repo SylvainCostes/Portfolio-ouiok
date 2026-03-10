@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { Bookmarks } from '../icons/Bookmarks'
 import { Briefcase } from '../icons/Briefcase'
 import { ChatTeardropDots } from '../icons/ChatTeardrop'
+import { Globe } from '../icons/Globe'
 import { HandPalm } from '../icons/HandPalm'
 import { HandWaving } from '../icons/HandWaving'
 import { Dock, DockIcon } from '../ui/dock'
@@ -38,17 +38,16 @@ export const bottomNavigationItems = [
     href: '/about',
     viewTransitionName: 'about'
   },
-  {
-    name: 'Bookmarks',
-    icon: Bookmarks,
-    href: '/bookmarks',
-    viewTransitionName: 'bookmarks'
-  }
 ] as const
 
 const BottomNavigationBar = () => {
   const [currentPath, setCurrentPath] = useState('')
   const firstSegment = '/' + (currentPath.split('/').filter(Boolean)[0] ?? '')
+
+  const isLangFr = currentPath.startsWith('/fr')
+  const langHref = isLangFr
+    ? currentPath.replace(/^\/fr/, '') || '/'
+    : '/fr' + currentPath
 
   const navRef = useRef<HTMLDivElement>(null)
 
@@ -64,7 +63,10 @@ const BottomNavigationBar = () => {
   useEffect(() => {
     setCurrentPath(window.location.pathname)
 
-    document.addEventListener('astro:page-load', handlePathChange)
+    document.addEventListener('astro:page-load', () => {
+      handlePathChange()
+      setCurrentPath(window.location.pathname)
+    })
     document.addEventListener('local-navigation', (e) => {
       setCurrentPath((e as CustomEvent).detail.path)
     })
@@ -76,8 +78,7 @@ const BottomNavigationBar = () => {
     return () => {
       document.removeEventListener('astro:page-load', handlePathChange)
       window.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
+    }  }, [])
 
   return (
     <>
@@ -118,6 +119,17 @@ const BottomNavigationBar = () => {
                 </DockIcon>
               )
             )}
+            <li className='mx-1 h-5 w-px self-center rounded-full bg-zinc-700' aria-hidden='true' />
+            <DockIcon
+              name='lang'
+              href={langHref}
+              aria-label={isLangFr ? 'Switch to English' : 'Passer en Français'}
+            >
+              <Globe className='size-4 shrink-0' />
+              <span className='absolute right-[3px] top-[3px] text-[7px] font-bold leading-none text-emerald-400'>
+                {isLangFr ? 'FR' : 'EN'}
+              </span>
+            </DockIcon>
           </Dock>
         </nav>
       </div>
@@ -127,6 +139,7 @@ const BottomNavigationBar = () => {
           {bottomNavigationItems.map(({ name }) => (
             <div key={name}>{name}</div>
           ))}
+          <div>{isLangFr ? '-> English' : '-> Français'}</div>
         </div>
       </div>
     </>

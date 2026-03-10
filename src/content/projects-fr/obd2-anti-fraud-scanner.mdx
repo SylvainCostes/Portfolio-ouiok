@@ -1,0 +1,133 @@
+---
+year: 2025
+title: 'Scanner Anti-Fraude OBD2 — ESP32 & Bus CAN'
+htmlTitle: 'Scanner Anti-Fraude OBD2\nESP32 & Bus CAN'
+description: 'Outil de diagnostic embarqué automobile utilisant ESP32 et transceiver CAN pour détecter la fraude au compteur kilométrique via audit de cohérence multi-ECU (ISO 15765-4 / UDS).'
+heroImage: 'https://images.unsplash.com/photo-1493238792000-8113da705763?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - ESP32
+  - Bus CAN
+  - ISO 15765-4
+  - UDS ISO-14229
+  - C / C++
+  - Systèmes Embarqués
+  - Automobile
+  - Anti-Fraude
+---
+
+## Le Problème
+
+La fraude au compteur kilométrique touche environ 30 à 50% des véhicules d'occasion vendus en Europe. Le fraudeur remet à zéro le compteur sur le tableau de bord — mais il ne modifie presque jamais **tous** les calculateurs (ECU) qui enregistrent le kilométrage de façon indépendante.
+
+Cet outil exploite cette incohérence.
+
+---
+
+## Matériel
+
+| Composant | Rôle |
+|---|---|
+| **ESP32-WROOM-32** | Microcontrôleur — WiFi, BLE, 240MHz dual-core |
+| **SN65HVD230** | Transceiver bus CAN (compatible 3.3V) |
+| **Connecteur OBD2** | Interface véhicule |
+| **Régulateur 3.3V** | Alimentation depuis la broche 12V OBD2 |
+
+```
+    Port OBD2 (véhicule)
+         │  │
+   CAN-H ┘  └ CAN-L
+         │  │
+    ┌────┴──┴────┐
+    │ SN65HVD230 │   ← Transceiver CAN (différentiel → TTL)
+    └────┬──┬────┘
+         TX RX (TTL 3.3V)
+         │  │
+    ┌────┴──┴────┐
+    │   ESP32    │   ← TWAI (Two-Wire Automotive Interface)
+    │  + WiFi    │
+    └────────────┘
+         │
+    Serveur HTTP (mode WiFi AP ou STA)
+         │
+    Dashboard navigateur
+```
+
+---
+
+## Stack de protocoles
+
+### ISO 15765-4 (transport OBDII sur CAN)
+
+La norme ISO 15765-4 définit comment les messages OBD2 sont encadrés sur CAN (ID 11 bits, 500kbps). Les réponses multi-octets utilisent un protocole de segmentation :
+
+```c
+// can_transport.c
+#define FRAME_TYPE_SINGLE      0x00
+#define FRAME_TYPE_FIRST       0x10
+#define FRAME_TYPE_CONSECUTIVE 0x20
+#define FRAME_TYPE_FLOW_CTRL   0x30
+
+// Réassembler un message ISO-TP multi-trames
+esp_err_t isotp_receive(can_message_t *frames, size_t count,
+                        uint8_t *out_buf, size_t *out_len) {
+    if ((frames[0].data[0] & 0xF0) == FRAME_TYPE_FIRST) {
+        uint16_t total_len = ((frames[0].data[0] & 0x0F) << 8)
+                              | frames[0].data[1];
+        // Envoyer Flow Control (CTS)
+        send_flow_control(FC_FLAG_CTS);
+        // Assembler les trames consécutives...
+    }
+    return ESP_OK;
+}
+```
+
+---
+
+## Détection de fraude
+
+L'algorithme interroge plusieurs ECU indépendants et compare leurs valeurs de kilométrage :
+
+```c
+// fraud_detection.c
+#define MILEAGE_TOLERANCE_KM 500  // Tolérance pour les ECU qui ne se synchronisent pas tous
+
+fraud_result_t detect_odometer_fraud(vehicle_data_t *data) {
+    uint32_t values[] = {
+        data->instrument_cluster_km,
+        data->abs_ecu_km,
+        data->airbag_ecu_km,
+        data->engine_ecu_km
+    };
+
+    uint32_t max_km = 0, min_km = UINT32_MAX;
+    for (int i = 0; i < 4; i++) {
+        if (values[i] > max_km) max_km = values[i];
+        if (values[i] < min_km) min_km = values[i];
+    }
+
+    uint32_t spread = max_km - min_km;
+    return (spread > MILEAGE_TOLERANCE_KM)
+        ? FRAUD_LIKELY
+        : FRAUD_UNLIKELY;
+}
+```
+
+---
+
+## Dashboard web (ESP32 WiFi AP)
+
+L'ESP32 crée son propre point d'accès WiFi. L'utilisateur s'y connecte et accède au dashboard via son navigateur :
+
+```
+http://192.168.4.1/
+```
+
+Le dashboard affiche les kilométrages de chaque ECU, le résultat de l'analyse, et des indicateurs supplémentaires (codes défauts, date du dernier service).
+
+---
+
+## Apprentissages
+
+Ce projet m'a plongé dans les protocoles embarqués réels utilisés dans l'industrie automobile. La partie la plus complexe n'était pas le code, mais **comprendre pourquoi les ECU divergent** : certains ne mettent à jour leur compteur que tous les 100 km, d'autres lors du démarrage, d'autres en temps réel. Calibrer la tolérance de fraude correctement demande de comprendre ces comportements.

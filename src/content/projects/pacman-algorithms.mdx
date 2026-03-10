@@ -1,0 +1,261 @@
+---
+year: 2022
+title: 'Pac-Man & Oriental Games — OOP & Algorithms in Java'
+htmlTitle: 'Pac-Man & Oriental Games\nOOP & Algorithms in Java'
+description: 'Full implementation of Pac-Man, Othello, and Chinese Checkers in Java. Ghost AI using BFS pathfinding, minimax with alpha-beta pruning for board games.'
+heroImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - Java
+  - OOP
+  - BFS / BFS Pathfinding
+  - Minimax
+  - Alpha-Beta Pruning
+  - Game Development
+  - Design Patterns
+  - Data Structures
+---
+
+## Context
+
+These projects were part of my **Licence Computer Science** coursework at UPEC. The objective: implement classic games from scratch to develop mastery of Object-Oriented design, data structures, and classical AI algorithms.
+
+No game engines. No frameworks. Pure Java with `javax.swing` for rendering.
+
+---
+
+## Pac-Man — Ghost AI with BFS
+
+### Architecture
+
+![Pac-Man Game Engine Architecture — Game Loop, Entity hierarchy, BFS Pathfinder and Ghost Personality Strategy](../../assets/pacmanarchitecture.png)
+
+### BFS Pathfinding
+
+Each ghost runs BFS on the maze graph to find the shortest path to its current target:
+
+```java
+// pathfinding/BFSPathfinder.java
+public class BFSPathfinder {
+    private final boolean[][] walls;
+    private final int rows, cols;
+
+    private static final int[][] DIRECTIONS = {{-1,0},{1,0},{0,-1},{0,1}};
+
+    public List<Point> findPath(Point start, Point target) {
+        if (walls[target.y][target.x]) return Collections.emptyList();
+
+        Queue<Point> queue = new LinkedList<>();
+        Map<Point, Point> parent = new HashMap<>();
+
+        queue.offer(start);
+        parent.put(start, null);
+
+        while (!queue.isEmpty()) {
+            Point current = queue.poll();
+
+            if (current.equals(target)) {
+                return reconstructPath(parent, target);
+            }
+
+            for (int[] dir : DIRECTIONS) {
+                Point neighbor = new Point(
+                    current.x + dir[1],
+                    current.y + dir[0]
+                );
+
+                if (isValid(neighbor) && !parent.containsKey(neighbor)) {
+                    parent.put(neighbor, current);
+                    queue.offer(neighbor);
+                }
+            }
+        }
+
+        return Collections.emptyList(); // No path found (should not happen in Pac-Man)
+    }
+
+    private boolean isValid(Point p) {
+        return p.x >= 0 && p.x < cols
+            && p.y >= 0 && p.y < rows
+            && !walls[p.y][p.x];
+    }
+
+    private List<Point> reconstructPath(Map<Point, Point> parent, Point target) {
+        List<Point> path = new ArrayList<>();
+        Point current = target;
+        while (current != null) {
+            path.add(0, current);
+            current = parent.get(current);
+        }
+        return path;
+    }
+}
+```
+
+### Ghost Personalities — Strategy Pattern
+
+The four Pac-Man ghosts have different targeting strategies — a great application of the **Strategy pattern**:
+
+```java
+// ghost/strategy/GhostStrategy.java
+public interface GhostStrategy {
+    Point getTarget(Ghost ghost, PacmanEntity pacman, Ghost[] allGhosts, Maze maze);
+}
+
+// Blinky: targets Pac-Man's exact position (direct chaser)
+public class BlinkyStrategy implements GhostStrategy {
+    @Override
+    public Point getTarget(Ghost ghost, PacmanEntity pacman,
+                           Ghost[] allGhosts, Maze maze) {
+        return pacman.getGridPosition();
+    }
+}
+
+// Pinky: targets 4 tiles ahead of Pac-Man (ambusher)
+public class PinkyStrategy implements GhostStrategy {
+    @Override
+    public Point getTarget(Ghost ghost, PacmanEntity pacman,
+                           Ghost[] allGhosts, Maze maze) {
+        Point pac = pacman.getGridPosition();
+        Direction dir = pacman.getDirection();
+        return new Point(
+            pac.x + dir.dx * 4,
+            pac.y + dir.dy * 4
+        );
+    }
+}
+
+// Clyde: targets Pac-Man when far, scatters when close (shy)
+public class ClydeStrategy implements GhostStrategy {
+    private static final int SCATTER_THRESHOLD = 8; // tiles
+
+    @Override
+    public Point getTarget(Ghost ghost, PacmanEntity pacman,
+                           Ghost[] allGhosts, Maze maze) {
+        double distance = ghost.getGridPosition().distance(pacman.getGridPosition());
+        if (distance > SCATTER_THRESHOLD) {
+            return pacman.getGridPosition(); // Chase
+        }
+        return maze.getClydeScatterCorner(); // Scatter to bottom-left
+    }
+}
+```
+
+---
+
+## Othello — Minimax with Alpha-Beta Pruning
+
+Othello (Reversi) is a perfect-information 2-player game, ideal for the **minimax algorithm**. Without optimizations, the game tree has ~58! nodes. Alpha-beta pruning reduces effective branching factor from ~10 to ~3-4.
+
+```java
+// ai/MinimaxEngine.java
+public class MinimaxEngine {
+    private final OthelloBoard board;
+    private final int maxDepth;
+    private final Heuristic heuristic;
+
+    // Returns best move for current player
+    public Move getBestMove(BoardState state, Disc player) {
+        Move best = null;
+        int bestScore = Integer.MIN_VALUE;
+
+        for (Move move : state.getLegalMoves(player)) {
+            BoardState next = state.apply(move);
+            int score = minimax(next, maxDepth - 1, Integer.MIN_VALUE,
+                                Integer.MAX_VALUE, false, player);
+            if (score > bestScore) {
+                bestScore = score;
+                best = move;
+            }
+        }
+        return best;
+    }
+
+    private int minimax(BoardState state, int depth, int alpha, int beta,
+                        boolean maximizing, Disc originalPlayer) {
+        // Base case: terminal state or max depth
+        if (depth == 0 || state.isTerminal()) {
+            return heuristic.evaluate(state, originalPlayer);
+        }
+
+        Disc currentPlayer = maximizing ? originalPlayer : originalPlayer.opponent();
+        List<Move> moves = state.getLegalMoves(currentPlayer);
+
+        // No legal moves: pass turn (Othello rule)
+        if (moves.isEmpty()) {
+            return minimax(state, depth - 1, alpha, beta, !maximizing, originalPlayer);
+        }
+
+        if (maximizing) {
+            int value = Integer.MIN_VALUE;
+            for (Move move : moves) {
+                value = Math.max(value,
+                    minimax(state.apply(move), depth - 1, alpha, beta, false, originalPlayer));
+                alpha = Math.max(alpha, value);
+                if (beta <= alpha) break; // Beta cut-off (prune)
+            }
+            return value;
+        } else {
+            int value = Integer.MAX_VALUE;
+            for (Move move : moves) {
+                value = Math.min(value,
+                    minimax(state.apply(move), depth - 1, alpha, beta, true, originalPlayer));
+                beta = Math.min(beta, value);
+                if (beta <= alpha) break; // Alpha cut-off (prune)
+            }
+            return value;
+        }
+    }
+}
+```
+
+### Othello Heuristic
+
+The heuristic is not just coin count — that's a common mistake for beginners. **Corner control** and **mobility** matter far more:
+
+```java
+// ai/OthelloHeuristic.java
+public class OthelloHeuristic implements Heuristic {
+    // Positional weight matrix (8x8 board)
+    private static final int[][] WEIGHTS = {
+        {120,-20, 20,  5,  5, 20,-20,120},
+        {-20,-40, -5, -5, -5, -5,-40,-20},
+        { 20, -5, 15,  3,  3, 15, -5, 20},
+        {  5, -5,  3,  3,  3,  3, -5,  5},
+        {  5, -5,  3,  3,  3,  3, -5,  5},
+        { 20, -5, 15,  3,  3, 15, -5, 20},
+        {-20,-40, -5, -5, -5, -5,-40,-20},
+        {120,-20, 20,  5,  5, 20,-20,120}
+    };
+
+    @Override
+    public int evaluate(BoardState state, Disc player) {
+        int score = 0;
+
+        // 1. Positional score (corners = 120, edges = negative)
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (state.get(r, c) == player)       score += WEIGHTS[r][c];
+                else if (state.get(r, c) == player.opponent()) score -= WEIGHTS[r][c];
+            }
+        }
+
+        // 2. Mobility: more legal moves = more flexibility
+        int myMoves  = state.getLegalMoves(player).size();
+        int oppMoves = state.getLegalMoves(player.opponent()).size();
+        if (myMoves + oppMoves > 0)
+            score += 10 * (myMoves - oppMoves) / (myMoves + oppMoves);
+
+        return score;
+    }
+}
+```
+
+---
+
+## Key Takeaways
+
+- **BFS vs. A\***: BFS guarantees shortest path in unweighted graphs. For Pac-Man's maze (uniform costs), BFS is optimal — A* would only help if moves had different costs.
+- **Alpha-beta pruning** can reduce minimax from O(b^d) to O(b^(d/2)) with perfect move ordering — doubling the effective search depth for the same compute budget.
+- **Strategy pattern** isn't abstract theory — Pac-Man's four ghosts are a textbook case where polymorphism makes the codebase readable and extensible.

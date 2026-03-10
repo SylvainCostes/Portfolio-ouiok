@@ -1,0 +1,366 @@
+---
+title: "My Homelab: A Mini Production Infrastructure on Raspberry Pi"
+description: "How I turned a Raspberry Pi 4 into a DevOps learning platform: reverse proxy, auto-deployment, monitoring, and GitOps — all from home."
+heroImage: https://images.unsplash.com/photo-1518770660439-4636190af475\?q\=80\&w\=2670\&auto\=format\&fit\=crop
+pubDate: 2026-02-20
+tags:
+  - homelab
+  - docker
+  - devops
+  - self-hosted
+  - raspberry-pi
+---
+
+## Why a homelab?
+
+There's a limit to what you can learn at work. Production environments are constrained, changes take time, and you never deliberately break things "just to see".
+
+My homelab is the opposite: an environment where I can apply DevOps patterns without a safety net, where production incidents are my own and I'm simultaneously the engineer and the unhappy customer.
+
+It's not a server rack in a datacenter. It's a Raspberry Pi 4 (8GB) running 24/7 in my apartment, drawing ~5W, and hosting a dozen containerized services. And it's taught me more than any tutorial ever could.
+
+---
+
+## Overall Architecture
+
+```
+Internet
+    │
+    │ HTTPS (443)
+    ▼
+Cloudflare Tunnel (encryption, DDoS protection)
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│  Raspberry Pi 4 — 8GB RAM, 256GB SSD USB        │
+│                                                 │
+│  ┌─────────────────────────────────────────┐   │
+│  │  Traefik (reverse proxy + TLS)          │   │
+│  └──────────────┬──────────────────────────┘   │
+│                 │                               │
+│    ┌────────────┼────────────┐                  │
+│    ▼            ▼            ▼                  │
+│  Portainer  Uptime Kuma  Gitea                  │
+│  (Docker UI) (monitoring) (self-hosted Git)     │
+│                 │                               │
+│    ┌────────────┼────────────┐                  │
+│    ▼            ▼            ▼                  │
+│  Nextcloud  Vaultwarden  Watchtower             │
+│  (files)   (passwords)  (auto-update)           │
+└─────────────────────────────────────────────────┘
+```
+
+Every arrow is an architectural decision — and often, a mistake I made before finding the right solution.
+
+---
+
+## Hardware
+
+| Component | Choice | Why |
+|---|---|---|
+| SBC | Raspberry Pi 4 (8GB) | Docker ARM64 support, massive community |
+| OS storage | 32GB SD card | OS only — real storage is elsewhere |
+| Data storage | 256GB SATA SSD via USB 3.0 | SD cards don't handle intensive writes |
+| Power supply | Official 5V/3A | Under-voltage = data corruption |
+| Case | Argon ONE M.2 | Passive cooling + integrated SSD slot |
+
+**The classic mistake to avoid**: putting everything on the SD card. The Docker layer store writes constantly. Within 3 months, my first SD card was dead. Since then, the OS lives on the SD and `/var/lib/docker` is on the SSD mounted via `fstab`.
+
+```bash
+# /etc/fstab — mount the SSD on the Docker folder
+UUID=xxxx-xxxx /var/lib/docker ext4 defaults,noatime 0 2
+```
+
+---
+
+## Networking: Cloudflare Tunnel over a Public IP
+
+The first temptation is to open ports in your router. That's a bad idea for three reasons:
+1. My public IP changes (dynamic IP with most ISPs)
+2. Exposing your IP directly = attack surface
+3. Some ISPs block ports 80/443 on residential subscriptions
+
+My solution: **Cloudflare Tunnel** (formerly Argo Tunnel).
+
+```bash
+# Install the cloudflared daemon
+curl -L --output cloudflared.deb \
+  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
+dpkg -i cloudflared.deb
+
+# Authenticate and create the tunnel
+cloudflared tunnel login
+cloudflared tunnel create homelab
+
+# Configuration
+cat > ~/.cloudflared/config.yml << EOF
+tunnel: <TUNNEL_ID>
+credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: portainer.mydomain.dev
+    service: http://localhost:9000
+  - hostname: git.mydomain.dev
+    service: http://localhost:3000
+  - hostname: uptime.mydomain.dev
+    service: http://localhost:3001
+  - service: http_status:404
+EOF
+
+# Start as a systemd service
+cloudflared service install
+systemctl enable cloudflared
+```
+
+Result: all my services are accessible via HTTPS with Let's Encrypt certificates managed automatically by Cloudflare, without opening a single port in my router.
+
+---
+
+## Traefik: The Real Reverse Proxy
+
+Cloudflare Tunnel sends traffic to port 80 on the Pi. **Traefik** handles internal routing to each service.
+
+```yaml
+# traefik/docker-compose.yml
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v3.0
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=WARN"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+```
+
+The beauty of Traefik: **configuration follows the container**. Each service declares itself via Docker labels:
+
+```yaml
+# Example: Portainer
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.mydomain.dev`)"
+      - "traefik.http.routers.portainer.entrypoints=web"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - proxy
+    restart: unless-stopped
+```
+
+No nginx config file to maintain by hand. Each new service joins the `proxy` network and Traefik detects it automatically.
+
+---
+
+## Self-Hosted CI/CD: Gitea + Gitea Actions
+
+This is the part that taught me the most, because it exactly mirrors what I do professionally with GitHub Actions.
+
+### Gitea: Self-Hosted GitHub
+
+```yaml
+# gitea/docker-compose.yml
+services:
+  gitea:
+    image: gitea/gitea:latest
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`git.mydomain.dev`)"
+    networks:
+      - proxy
+    restart: unless-stopped
+```
+
+### The Gitea Actions Runner
+
+```yaml
+  gitea-runner:
+    image: gitea/act_runner:latest
+    environment:
+      - GITEA_INSTANCE_URL=http://gitea:3000
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${RUNNER_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner_data:/data
+    depends_on:
+      - gitea
+    restart: unless-stopped
+```
+
+### An Example Pipeline: Deploy My Blog to the Pi
+
+```yaml
+# .gitea/workflows/deploy.yml
+name: Deploy to Homelab
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t blog:${{ github.sha }} .
+          docker tag blog:${{ github.sha }} blog:latest
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull blog:latest
+            docker compose -f /opt/blog/docker-compose.yml up -d --no-deps blog
+            docker image prune -f
+```
+
+Every push to `main` triggers a rebuild and redeployment. It's basic GitOps, but it's exactly the pattern we use with ArgoCD in enterprise — just without the automatic reconciliation loop.
+
+---
+
+## Monitoring: Uptime Kuma
+
+Uptime Kuma monitors all my services and sends me a Telegram notification if something goes down.
+
+```yaml
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    volumes:
+      - uptime_data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime.rule=Host(`uptime.mydomain.dev`)"
+    networks:
+      - proxy
+    restart: unless-stopped
+```
+
+What I monitor:
+- All Docker services (HTTP check)
+- Cloudflare tunnel latency
+- Remaining disk space (via a custom script)
+- TLS certificate expiration
+
+**What I learned**: you always think about service uptime. You forget about disk. My Pi crashed one night because Docker logs had filled the SSD. Since then, I've set up log rotation:
+
+```json
+// /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+```
+
+---
+
+## Security
+
+A homelab accessible from the internet must be treated like a production server.
+
+**What I've put in place:**
+
+```bash
+# Fail2ban to block SSH brute force attempts
+apt install fail2ban
+systemctl enable fail2ban
+
+# Disable SSH password authentication
+# /etc/ssh/sshd_config
+PasswordAuthentication no
+PubkeyAuthentication yes
+
+# Firewall — only allow Cloudflare + local SSH
+ufw default deny incoming
+ufw allow from 192.168.1.0/24 to any port 22
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+```
+
+**Cloudflare IPs whitelisted via Fail2ban**: Cloudflare publishes its IP list. Any traffic arriving on port 80 without coming from Cloudflare is suspicious.
+
+---
+
+## What This Homelab Taught Me
+
+Here's what no online course teaches you, but a homelab forces you to discover:
+
+### 1. Docker Volumes and Data Persistence
+
+When I accidentally deleted my Gitea container, I understood the difference between a **named volume** (persistent data) and a **bind mount** (data in a local folder). My data was in a named volume — it survived.
+
+### 2. Docker Networks
+
+The `proxy` network created manually and shared across multiple `docker-compose.yml` files from different services. Without it, Traefik can't route traffic to containers in other stacks.
+
+```bash
+# Created once, referenced as external in each compose
+docker network create proxy
+```
+
+### 3. Secrets Management
+
+Tokens, SSH keys, and passwords live in a `.env` file on the Pi — never in the Git repo. Gitea itself stores secrets like GitHub: encrypted, accessible only inside pipelines.
+
+### 4. Zero-Downtime Updates
+
+Watchtower checks for new images every night and restarts affected containers. But for Portainer or Gitea (critical services), I do updates manually after reading the changelogs.
+
+---
+
+## What I Want to Add
+
+- **Prometheus + Grafana** to replace Uptime Kuma with more granular monitoring
+- **Renovate Bot** to automate Docker image updates in compose files
+- **ArgoCD** to replace SSH deployment scripts with real GitOps with a reconciliation loop — like what we use in prod at SG CIB
+
+---
+
+## Conclusion
+
+A homelab isn't a geek project to impress colleagues. It's a **controlled-failure learning environment**.
+
+Every outage taught me something I wouldn't have solved by reading documentation. Every self-hosted service gave me intuition for what happens "under the hood" of the managed services we use at work.
+
+And when at 3am a deployment goes wrong in production, having already resolved similar incidents on your Pi makes a real difference.
+
+---
+
+*Full homelab stack: Raspberry Pi 4 8GB · Docker · Traefik · Portainer · Gitea · Gitea Actions · Uptime Kuma · Vaultwarden · Nextcloud · Cloudflare Tunnel · Watchtower*

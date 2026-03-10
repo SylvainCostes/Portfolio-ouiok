@@ -1,0 +1,137 @@
+---
+year: 2024
+title: 'GreenTrip — Plateforme de Voyage Éco-Responsable'
+htmlTitle: 'GreenTrip —\nVoyage Éco-Responsable'
+description: 'Plateforme de voyage full-stack (Java 21/Spring Boot, PostgreSQL, Docker) avec pipeline CI/CD et quality gates SonarCloud. Co-fondée comme projet de startup.'
+heroImage: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - Java 21
+  - Spring Boot
+  - Gradle
+  - PostgreSQL
+  - Docker Compose
+  - GitHub Actions
+  - SonarCloud
+  - REST API
+links:
+  - name: 'GitHub'
+    icon: 'Github'
+    url: 'https://github.com/sylvaincostes/greentrip'
+---
+
+## Contexte
+
+GreenTrip est né d'un projet de startup en Master : construire et livrer un vrai produit, pas juste un prototype. Le concept — une plateforme de voyage éco-responsable qui met en avant les options de transport bas-carbone et calcule l'impact CO₂ par trajet.
+
+Mon rôle couvrait la full-stack : API Spring Boot, architecture base de données, et — surtout — toute l'infrastructure DevOps. Un co-fondateur s'est occupé du frontend.
+
+---
+
+## Architecture
+
+```
+Frontend (React)
+      │
+      │ REST / JSON
+      ▼
+┌──────────────────────────────────────────────┐
+│       Application Spring Boot 3              │
+│  Controllers → Services → Repositories       │
+│                                              │
+│  ┌──────────────┐  ┌────────────────────┐   │
+│  │  Route Engine │  │  Carbon Calculator  │  │
+│  │ (CO₂/km par  │  │  (facteurs ADEME)   │  │
+│  │  transport)  │  │                    │  │
+│  └──────────────┘  └────────────────────┘   │
+└─────────────────────┬────────────────────────┘
+                      │ JPA / Hibernate
+                      ▼
+                 PostgreSQL 16
+              (Docker Compose)
+```
+
+---
+
+## Le Calculateur Carbone
+
+La fonctionnalité core : calculer les émissions CO₂ par segment de trajet en utilisant les facteurs d'émission officiels de l'ADEME (Agence de la Transition Écologique).
+
+```java
+// CarbonCalculatorService.java
+@Service
+public class CarbonCalculatorService {
+
+    // Facteurs d'émission ADEME 2024 (kg CO₂ eq. par passager-km)
+    private static final Map<TransportMode, Double> EMISSION_FACTORS = Map.of(
+        TransportMode.PLANE_SHORT_HAUL,  0.230,
+        TransportMode.HIGH_SPEED_TRAIN,  0.00187,  // TGV
+        TransportMode.REGIONAL_TRAIN,    0.00886,
+        TransportMode.BUS_INTERCITY,     0.0296,
+        TransportMode.ELECTRIC_CAR,      0.0193,
+        TransportMode.THERMAL_CAR,       0.1920
+    );
+
+    public RouteEmissions calculate(RouteRequest request) {
+        List<SegmentEmission> segments = request.segments().stream()
+            .map(segment -> {
+                double factor = EMISSION_FACTORS.getOrDefault(
+                    segment.mode(), Double.MAX_VALUE
+                );
+                double distanceKm = haversineDistance(
+                    segment.origin(), segment.destination()
+                );
+                return new SegmentEmission(segment, distanceKm, factor * distanceKm);
+            })
+            .toList();
+
+        double totalCo2 = segments.stream()
+            .mapToDouble(SegmentEmission::co2Kg)
+            .sum();
+
+        return new RouteEmissions(segments, totalCo2);
+    }
+}
+```
+
+---
+
+## Pipeline CI/CD
+
+```yaml
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'temurin' }
+
+      - name: Build & Test
+        run: ./gradlew build test
+
+      - name: SonarCloud Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar
+
+      - name: Quality Gate Check
+        # Bloque le merge si la couverture tombe sous 80%
+        run: ./gradlew sonarQualityGate
+```
+
+La **quality gate SonarCloud** était non-négociable : couverture de tests minimum 80%, zéro code smell critique autorisé. Si la gate échoue, la PR ne peut pas être mergée.
+
+---
+
+## Ce que j'ai appris
+
+GreenTrip m'a appris que **le DevOps n'est pas une option sur un projet sérieux**. Sans pipeline CI dès le départ, les PR de l'autre co-fondateur auraient introduit des régressions qu'on aurait détectées lors de la démo finale. Avec, chaque merge était validé automatiquement.
+
+C'est aussi le projet où j'ai vraiment compris la valeur des quality gates : pas comme une contrainte, mais comme un filet de sécurité qui libère la vitesse de développement.

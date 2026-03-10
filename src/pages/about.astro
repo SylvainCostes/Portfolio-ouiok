@@ -1,5 +1,222 @@
 ---
-import UnderConstruction from './_components/UnderConstruction.astro'
+import { ArgoCD } from '@icons/ArgoCD'
+import { AWS } from '@icons/AWS'
+import { Azure } from '@icons/Azure'
+import { Bash } from '@icons/Bash'
+import { Docker } from '@icons/Docker'
+import { GithubOutline as Github } from '@icons/GithubOutline'
+import { Helm } from '@icons/Helm'
+import { Kubernetes } from '@icons/Kubernetes'
+import { LinkedIn } from '@icons/LinkedIn'
+import { Mail } from '@icons/Mail'
+import { Python } from '@icons/Python'
+import { Terraform } from '@icons/Terraform'
+
+import SEO from '@/components/SEO.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getCustomTransition } from '@/lib/customTransition'
+
+import Decorator from './_components/Decorator.astro'
+
+const stack = [
+  { icon: Kubernetes, label: 'Kubernetes / AKS' },
+  { icon: Terraform, label: 'Terraform' },
+  { icon: ArgoCD, label: 'ArgoCD' },
+  { icon: Helm, label: 'Helm' },
+  { icon: Docker, label: 'Docker' },
+  { icon: Azure, label: 'Azure' },
+  { icon: AWS, label: 'AWS' },
+  { icon: Bash, label: 'Bash / Shell' },
+  { icon: Python, label: 'Python' },
+  { icon: Github, label: 'GitHub Actions' },
+]
+
+const timeline = [
+  {
+    period: 'Sept. 2025 → present',
+    role: 'Platform / DevOps Engineer',
+    company: 'Société Générale CIB',
+    description:
+      'Critical payment platforms (SEPA / Cross-Border). GitOps CI/CD pipelines serving ~40 engineers across France and India. Stack: AKS, ArgoCD, Helm, GitHub Actions, Terraform.',
+    accent: 'emerald',
+  },
+  {
+    period: 'Apr. 2024 → Aug. 2025',
+    role: 'Full-Stack Engineer (apprenticeship)',
+    company: 'Optic 2000 / ATS',
+    description:
+      'Built and shipped a production LLM chatbot (Amazon Bedrock / Claude). Serverless architecture on AWS (Lambda, S3). Automated testing with Cypress.',
+    accent: 'sky',
+  },
+  {
+    period: 'Sept. 2024 → May 2025',
+    role: 'Co-founder & DevOps',
+    company: 'GreenTrip',
+    description:
+      'CI/CD infrastructure, GitHub Actions, end-to-end deployment pipeline setup for the project.',
+    accent: 'violet',
+  },
+]
 ---
 
-<UnderConstruction />
+<BaseLayout>
+  <SEO
+    title='About — Sylvain Costes'
+    description='Platform & DevOps Engineer. Kubernetes, Terraform, Azure, CI/CD. Based in Paris.'
+    slot='seo'
+  />
+  <Decorator slot='decorator' />
+
+  <!-- ── Hero ─────────────────────────────────────────────────── -->
+  <section class='mt-24 flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-16'>
+
+    <!-- Avatar placeholder / initials -->
+    <div
+      class='flex size-24 shrink-0 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 text-2xl font-semibold text-zinc-300 lg:size-28'
+      transition:animate={getCustomTransition()}
+    >
+      SC
+    </div>
+
+    <div class='flex flex-col gap-4' transition:animate={getCustomTransition(0.05)}>
+      <div class='flex items-center gap-3'>
+        <div class='relative size-2.5'>
+          <div class='absolute size-full animate-ping rounded-full bg-green-300 opacity-65'></div>
+          <div class='size-full rounded-full bg-green-400'></div>
+        </div>
+        <span class='text-sm text-slate-300'>Open to opportunities</span>
+      </div>
+
+      <h1 class='text-[clamp(2rem,6vw,3rem)] font-semibold leading-none tracking-tight'>
+        Sylvain Costes
+      </h1>
+      <p class='text-lg text-zinc-400'>
+        Platform Engineer · Azure / AKS · Terraform · CI/CD
+      </p>
+
+      <!-- Contact links -->
+      <div class='mt-2 flex flex-wrap gap-3'>
+        <a
+          href='https://www.linkedin.com/in/sylvaincs'
+          target='_blank'
+          rel='noopener noreferrer'
+          class='flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white'
+        >
+          <LinkedIn className='size-4' /> LinkedIn
+        </a>
+        <a
+          href='https://github.com/sylvaincostes'
+          target='_blank'
+          rel='noopener noreferrer'
+          class='flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white'
+        >
+          <Github className='size-4' /> GitHub
+        </a>
+        <a
+          href='mailto:contact@sylvainc.dev'
+          class='flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white'
+        >
+          <Mail className='size-4' /> Email
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Bio ──────────────────────────────────────────────────── -->
+  <section class='mt-20 max-w-2xl' transition:animate={getCustomTransition(0.1)}>
+    <h2 class='mb-5 text-sm font-semibold uppercase tracking-widest text-zinc-500'>
+      About
+    </h2>
+    <div class='flex flex-col gap-4 leading-relaxed text-zinc-300'>
+      <p>
+        I'm a Platform Engineer at <strong class='text-white'>Société Générale CIB</strong>,
+        where I build and maintain the infrastructure that powers critical payment platforms
+        (SEPA, Cross-Border). Every day I work on systems where reliability is non-negotiable:
+        a pipeline failing in prod means real financial transactions on the line.
+      </p>
+      <p>
+        What drives me? Turning deployment friction into something invisible for product teams.
+        I firmly believe DevOps culture is first and foremost about
+        <strong class='text-white'>empathy for developers</strong>:
+        understanding their constraints before pushing tools at them.
+      </p>
+      <p>
+        Before specialising in Platform Engineering, I worked as a Full-Stack Engineer
+        (Java / React / AWS Serverless) and shipped a <strong class='text-white'>production LLM chatbot</strong>
+        at Optic 2000. That dual background — application code + infrastructure — lets me
+        design CI/CD pipelines that reflect the realities of the field.
+      </p>
+      <p>
+        Outside of work, I run a <strong class='text-white'>homelab</strong> on Raspberry Pi
+        (Docker, Portainer, Traefik reverse proxy, self-hosted CI/CD) — my sandbox for testing
+        without a safety net what I apply at work. Hackathons, CTFs, conferences (AWS Summit Paris):
+        I stay in a permanent learning mode.
+      </p>
+      <p>
+        Master MIAGE (Paris Nanterre, with distinction) · AWS Certified Cloud Practitioner · TOEIC 935/990
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Tech Stack ────────────────────────────────────────────── -->
+  <section class='mt-20' transition:animate={getCustomTransition(0.15)}>
+    <h2 class='mb-6 text-sm font-semibold uppercase tracking-widest text-zinc-500'>
+      Main Stack
+    </h2>
+    <div class='flex flex-wrap gap-3'>
+      {
+        stack.map(({ icon: Icon, label }) => (
+          <div class='flex items-center gap-2 rounded-xl border border-zinc-700/60 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-300 backdrop-blur-sm'>
+            <Icon className='size-4 shrink-0' />
+            {label}
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── Timeline ──────────────────────────────────────────────── -->
+  <section class='mt-20' transition:animate={getCustomTransition(0.2)}>
+    <h2 class='mb-8 text-sm font-semibold uppercase tracking-widest text-zinc-500'>
+      Timeline
+    </h2>
+    <ol class='relative border-l border-zinc-800'>
+      {
+        timeline.map(({ period, role, company, description }) => (
+          <li class='mb-10 ml-6'>
+            <span class='absolute -left-1.5 mt-1.5 size-3 rounded-full border border-zinc-700 bg-zinc-900' />
+            <time class='mb-1 block text-xs font-normal text-zinc-500'>{period}</time>
+            <h3 class='text-base font-semibold text-white'>{role}</h3>
+            <p class='mb-1 text-sm font-medium text-zinc-400'>{company}</p>
+            <p class='text-sm leading-relaxed text-zinc-500'>{description}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- ── Values / Philosophy ───────────────────────────────────── -->
+  <section class='mt-20 mb-24 grid gap-4 sm:grid-cols-3' transition:animate={getCustomTransition(0.25)}>
+    {
+      [
+        {
+          title: 'Reliability first',
+          body: 'A system that goes down in prod costs more than a delayed feature. I optimise for availability and observability before velocity.',
+        },
+        {
+          title: 'Everything is code',
+          body: 'Infrastructure, configuration, runbooks: if it\'s not in a repo with a PR, it doesn\'t exist. GitOps isn\'t a buzzword, it\'s hygiene.',
+        },
+        {
+          title: 'Permanent curiosity',
+          body: 'CTFs, hackathons, homelab: I deliberately break things to understand how they work. That\'s what separates someone who follows tutorials from someone who resolves incidents at 3am.',
+        },
+      ].map(({ title, body }) => (
+        <div class='rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5'>
+          <h3 class='mb-2 font-semibold text-white'>{title}</h3>
+          <p class='text-sm leading-relaxed text-zinc-400'>{body}</p>
+        </div>
+      ))
+    }
+  </section>
+</BaseLayout>

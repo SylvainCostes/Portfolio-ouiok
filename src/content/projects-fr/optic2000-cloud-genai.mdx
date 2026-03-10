@@ -1,0 +1,111 @@
+---
+year: 2024
+title: 'Plateforme Cloud & GenAI chez Optic 2000'
+htmlTitle: 'Plateforme Cloud & GenAI\nchez Optic 2000'
+description: "Architecture Serverless Full-Stack sur AWS avec un chatbot LLM en production (Amazon Bedrock/Claude) qui a réduit measurablement le volume d'appels au support."
+heroImage: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+type: 'experience'
+company: 'Audioptic Trade Services (Optic 2000)'
+role: 'Développeur Full-Stack · Alternance'
+period: '2023 – 2024'
+tags:
+  - AWS Lambda
+  - Amazon Bedrock
+  - Claude
+  - Java / Spring Boot
+  - React / Redux
+  - Serverless
+  - Cypress
+  - Agile Scrum
+  - LLM
+---
+
+## Contexte
+
+Lors de mon alternance chez **Audioptic Trade Services (ATS)**, la filiale technologique du groupe Optic 2000, j'ai travaillé au sein de la Digital Factory sur deux axes majeurs : la construction d'applications B2B Serverless pour les opticiens, et le prototypage d'un chatbot IA mis en production.
+
+Le groupe exploite 1 400+ magasins d'optique en France. Le défi de la Digital Factory était de livrer des outils internes scalables sans équipe ops dédiée — d'où le pari sur AWS Serverless.
+
+---
+
+## Chatbot LLM — Atsia
+
+Le projet phare : **Atsia**, un chatbot en production construit sur **Amazon Bedrock** (modèle Anthropic Claude) pour assister les opticiens avec les questions opérationnelles fréquentes — réduisant les appels entrants au helpdesk ATS.
+
+### Architecture
+
+```
+Opticien (navigateur)
+       │
+       │ HTTPS
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│               AWS API Gateway (REST)                     │
+└─────────────────────────┬────────────────────────────────┘
+                          │ Lambda proxy integration
+                          ▼
+┌──────────────────────────────────────────────────────────┐
+│               AWS Lambda (Java / Spring Boot)            │
+│  - Prompt engineering + injection de contexte           │
+│  - Gestion de l'historique de conversation (DynamoDB)   │
+│  - Appel Bedrock InvokeModel                            │
+└──────┬──────────────────┬───────────────────────────────┘
+       │                  │
+       ▼                  ▼
+Amazon Bedrock       DynamoDB
+(Claude Sonnet)      (historique de session)
+```
+
+### Intégration Bedrock (Java)
+
+```java
+// BedrockService.java
+@Service
+public class BedrockService {
+
+    private final BedrockRuntimeClient bedrockClient;
+    private final PromptBuilder promptBuilder;
+
+    public ChatResponse invoke(ChatRequest request, List<Message> history) {
+        String prompt = promptBuilder.buildWithContext(request.message(), history);
+
+        InvokeModelRequest invokeRequest = InvokeModelRequest.builder()
+            .modelId("anthropic.claude-3-sonnet-20240229-v1:0")
+            .body(SdkBytes.fromUtf8String(buildAnthropicPayload(prompt)))
+            .contentType("application/json")
+            .build();
+
+        InvokeModelResponse response = bedrockClient.invokeModel(invokeRequest);
+        return parseClaudeResponse(response.body().asUtf8String());
+    }
+}
+```
+
+### Prompt Engineering — System Prompt
+
+Le system prompt est le cœur de la qualité d'Atsia. Il a été affiné itérativement avec l'équipe support pour ancrer le modèle dans la connaissance spécifique d'ATS : catalogue produits, procédures SAV, questions de facturation opticiens. Chaque itération était validée sur un ensemble de questions de référence issues des vrais tickets de support.
+
+---
+
+## Applications Serverless B2B
+
+En parallèle du chatbot, j'ai contribué à plusieurs applications utilisées quotidiennement par les opticiens partenaires :
+
+- **Gestion des commandes** : interface React + Redux connectée à des Lambda Java
+- **Tableaux de bord analytiques** : agrégation de données de ventes via S3 + Athena
+- **Tests automatisés** : suite Cypress couvrant les parcours critiques utilisateur
+
+L'architecture Serverless (pas de serveurs à gérer, facturation à l'usage, scaling automatique) était le bon choix pour un groupe retail avec des pics de charge saisonniers et sans SRE dédié.
+
+---
+
+## Impact
+
+| Métrique | Résultat |
+|---|---|
+| Chatbot Atsia | Mis en production, utilisé quotidiennement |
+| Réduction appels support | Mesurable après déploiement |
+| Tests Cypress | Parcours critiques couverts |
+| Stack | 100% Serverless AWS |

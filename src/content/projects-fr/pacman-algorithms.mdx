@@ -1,0 +1,140 @@
+---
+year: 2022
+title: 'Pac-Man & Jeux Orientaux — POO & Algorithmes en Java'
+htmlTitle: 'Pac-Man & Jeux Orientaux\nPOO & Algorithmes en Java'
+description: 'Implémentation complète de Pac-Man, Othello et Dames Chinoises en Java. IA des fantômes avec pathfinding BFS, minimax avec élagage alpha-bêta pour les jeux de plateau.'
+heroImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - Java
+  - POO
+  - BFS / Pathfinding BFS
+  - Minimax
+  - Élagage Alpha-Bêta
+  - Développement Jeux
+  - Patrons de Conception
+  - Structures de Données
+---
+
+## Contexte
+
+Ces projets faisaient partie du cursus de **Licence Informatique** à l'UPEC. L'objectif : implémenter des jeux classiques from scratch pour maîtriser la conception Orientée Objet, les structures de données et les algorithmes d'IA classiques.
+
+Pas de moteur de jeu. Pas de framework. Java pur avec `javax.swing` pour le rendu.
+
+---
+
+## Pac-Man — IA des Fantômes avec BFS
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Boucle de Jeu                      │
+│  GameLoop ─▶ update(dt) ─▶ render()                 │
+│                │                                    │
+│         ┌──────┴──────┐                             │
+│         ▼             ▼                             │
+│    PacmanEntity   GhostEntity (4 instances)         │
+│         │             │                             │
+│    InputHandler   AIController                      │
+│                       │                             │
+│               ┌───────┴────────┐                   │
+│               ▼                ▼                   │
+│          BFSPathfinder   PersonalityStrategy        │
+│          (cible Pac-Man) Blinky/Pinky/Inky/Clyde   │
+└─────────────────────────────────────────────────────┘
+```
+
+### Pathfinding BFS
+
+Chaque fantôme exécute un BFS sur le graphe du labyrinthe pour trouver le chemin le plus court vers sa cible actuelle :
+
+```java
+// pathfinding/BFSPathfinder.java
+public List<Point> findPath(Point start, Point target) {
+    if (walls[target.y][target.x]) return Collections.emptyList();
+
+    Queue<Point> queue = new LinkedList<>();
+    Map<Point, Point> parent = new HashMap<>();
+
+    queue.offer(start);
+    parent.put(start, null);
+
+    while (!queue.isEmpty()) {
+        Point current = queue.poll();
+
+        if (current.equals(target)) {
+            return reconstructPath(parent, target);
+        }
+
+        for (int[] dir : DIRECTIONS) {
+            Point neighbor = new Point(current.x + dir[1], current.y + dir[0]);
+            if (isValid(neighbor) && !parent.containsKey(neighbor)) {
+                parent.put(neighbor, current);
+                queue.offer(neighbor);
+            }
+        }
+    }
+    return Collections.emptyList();
+}
+```
+
+### Personnalités des Fantômes
+
+Chaque fantôme a une stratégie de ciblage distincte, fidèle au jeu original :
+- **Blinky** : cible toujours la position actuelle de Pac-Man
+- **Pinky** : cible 4 cases devant Pac-Man
+- **Inky** : cible calculée en fonction de Blinky et Pac-Man
+- **Clyde** : cible Pac-Man sauf s'il est trop proche (fuite)
+
+---
+
+## Othello & Dames Chinoises — Minimax avec Alpha-Bêta
+
+Pour les jeux de plateau à deux joueurs, j'ai implémenté l'algorithme **Minimax** avec l'optimisation **alpha-bêta** :
+
+```java
+// ai/MinimaxEngine.java
+public Move findBestMove(GameState state, int depth) {
+    return minimax(state, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, true).move;
+}
+
+private MinimaxResult minimax(GameState state, int depth,
+                               int alpha, int beta, boolean isMaximizing) {
+    if (depth == 0 || state.isTerminal()) {
+        return new MinimaxResult(null, evaluateBoard(state));
+    }
+
+    List<Move> moves = state.getLegalMoves();
+    Move bestMove = moves.get(0);
+    int bestScore = isMaximizing ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+
+    for (Move move : moves) {
+        GameState next = state.apply(move);
+        int score = minimax(next, depth - 1, alpha, beta, !isMaximizing).score;
+
+        if (isMaximizing) {
+            if (score > bestScore) { bestScore = score; bestMove = move; }
+            alpha = Math.max(alpha, score);
+        } else {
+            if (score < bestScore) { bestScore = score; bestMove = move; }
+            beta = Math.min(beta, score);
+        }
+
+        // Élagage alpha-bêta
+        if (beta <= alpha) break;
+    }
+
+    return new MinimaxResult(bestMove, bestScore);
+}
+```
+
+L'élagage alpha-bêta réduit le nombre de nœuds évalués de O(b^d) à O(b^(d/2)) dans le meilleur cas — ce qui double la profondeur explorable pour le même budget de temps.
+
+---
+
+## Apprentissages
+
+Ces projets m'ont donné une compréhension intuitive des algorithmes de recherche que je n'aurais pas eu autrement. Le BFS n'est pas qu'une formule — c'est un fantôme qui se déplace de façon crédible dans un labyrinthe. Le minimax n'est pas qu'un arbre — c'est un adversaire qui anticipe vos coups deux tours à l'avance.

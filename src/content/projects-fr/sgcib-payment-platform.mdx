@@ -1,0 +1,96 @@
+---
+year: 2025
+title: 'Plateforme de Paiements — SG CIB'
+htmlTitle: 'Plateforme Infrastructure\nPaiements SG CIB'
+description: 'Plateforme CI/CD GitOps pour les systèmes de paiements SEPA et Cross-Border de Société Générale CIB, au service de 100+ ingénieurs en France et en Inde.'
+heroImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+type: 'experience'
+company: 'Société Générale CIB'
+role: 'Platform Engineer · Alternance'
+period: '2024 – 2025'
+tags:
+  - Kubernetes / AKS
+  - ArgoCD
+  - Helm
+  - Terraform
+  - GitHub Actions
+  - Harbor
+  - GitOps
+  - RabbitMQ
+  - C# / .NET
+  - Filebeat
+---
+
+## Contexte
+
+Au sein du département **Global Banking Technology & Operations** de Société Générale CIB (Financing and Transaction Banking — Payment Definition), j'ai conçu et maintenu l'infrastructure plateforme qui sous-tend les systèmes critiques de transfert de fonds et de collecte — couvrant les paiements européens (SEPA : SCT, SDD) et les transactions internationales (Cross-Border / XCT).
+
+Ce sont des **systèmes financiers de niveau 1**. L'indisponibilité n'est pas une option, et un déploiement mal configuré peut avoir un impact direct sur de vraies transactions. La plateforme servait une communauté d'ingénierie distribuée d'environ 100 collaborateurs entre Paris et l'Inde (~40 utilisateurs actifs quotidiens des pipelines).
+
+---
+
+## Pipeline CI/CD — De Jenkins à GitHub Actions
+
+À mon arrivée, l'équipe utilisait **Jenkins** pour la CI. L'une des premières initiatives majeures a été la migration vers **GitHub Actions**, ce qui nous a permis de co-localiser les définitions de pipelines avec le code applicatif, de réduire la charge de maintenance des pipelines, et d'unifier l'expérience développeur sur tous les services.
+
+Les images Docker produites par la CI sont poussées vers **Harbor**, un registre OCI auto-hébergé. Harbor fournit le scanning d'images, le contrôle d'accès par projet, et des politiques de rétention — exigences critiques pour une infrastructure de niveau financier où chaque artefact en production doit être traçable.
+
+Le pipeline CI couvre : linting, tests unitaires, build de l'image Docker, push vers Harbor, et enfin une mise à jour automatique du tag d'image dans le dépôt GitOps — ce qui déclenche le côté CD.
+
+---
+
+## Stack applicative
+
+La majorité des services backend sont écrits en **C# / .NET**, exposés comme microservices et communiquant de façon asynchrone via **RabbitMQ**. Python est utilisé pour les scripts opérationnels, les outils de migration de données et les tâches d'automatisation autour de la plateforme.
+
+Chaque service embarque un **Dockerfile** maintenu par l'équipe. La standardisation de ces Dockerfiles (versions d'images de base, builds multi-stages, utilisateurs non-root) faisait partie de l'effort de durcissement de la plateforme.
+
+**Filebeat** tourne comme sidecar dans chaque pod, collectant les logs structurés des applications et les envoyant vers la stack Elasticsearch / Kibana centralisée. Cela maintient les préoccupations d'observabilité hors du code applicatif tout en fournissant une traçabilité complète des logs sur des centaines de conteneurs.
+
+---
+
+## Intégration des fournisseurs — FIS & TCS
+
+Deux plateformes de paiements propriétaires ont été intégrées dans cette infrastructure : **FIS** (rails de paiements SEPA) et **TCS BaNCS** (flux XCT internationaux). Ce sont des produits tiers qui ne s'intègrent pas nativement dans un modèle GitOps containerisé.
+
+Une partie significative du travail plateforme consistait à construire des **wrappers et adaptateurs** autour de ces fournisseurs — exposant leur fonctionnalité via des API internes standardisées et des contrats de messages, afin que le reste de la plateforme puisse interagir avec eux de façon cohérente, sans couplage fort aux interfaces propriétaires.
+
+---
+
+## GitOps avec ArgoCD & Multi-sourcing
+
+Le modèle de déploiement est **entièrement GitOps** : aucun humain n'applique de changements directement sur le cluster. Chaque changement passe par une pull request, réussit la CI, et est réconcilié par **ArgoCD**, qui compare en continu l'état du cluster avec la source de vérité Git et corrige toute dérive automatiquement.
+
+Nous avons utilisé la fonctionnalité d'**application multi-source** d'ArgoCD pour composer des déploiements depuis plusieurs dépôts simultanément — par exemple en combinant notre chart applicatif interne avec un chart de bibliothèque partagée versionné séparément, sans dupliquer la configuration. C'était clé pour supporter ~40 équipes déployant des services à leur propre cadence de release.
+
+---
+
+## Chart Helm interne
+
+L'équipe maintient un **chart Helm interne** partagé entre tous les services de paiements. Il encode les valeurs par défaut de l'organisation : limites de ressources, injection du sidecar Filebeat, configuration des connexions RabbitMQ, patterns de probes readiness/liveness, et politiques réseau. Les équipes consomment ce chart en fixant une version spécifique dans leur manifest d'application ArgoCD et en n'overridant que ce qui diffère pour leur service.
+
+Ce modèle chart-as-platform-contract a radicalement réduit la dérive de configuration sur des dizaines de microservices et nous a donné un seul endroit pour appliquer des patches de sécurité ou des améliorations d'observabilité à toute la flotte.
+
+---
+
+## Infrastructure as Code — Terraform
+
+Le cluster AKS, le réseau Azure, le Key Vault, le registre Harbor et les ressources Azure associées sont tous gérés via **Terraform**. Cela inclut les scripts de migration utilisés pour déplacer les workloads du legacy on-prem vers AKS — permettant une transition progressive et auditable avec capacité de rollback à chaque étape.
+
+Les états sont stockés à distance avec verrouillage, et les changements suivent le même processus de revue par PR que le code applicatif. Rien dans Azure n'est modifié en dehors de Terraform.
+
+---
+
+## Impact
+
+| Métrique | Valeur |
+|---|---|
+| Ingénieurs supportés | ~100 (France + Inde) |
+| Utilisateurs actifs quotidiens des pipelines | ~40 |
+| Systèmes de paiements | SEPA (SCT / SDD) + Cross-Border (XCT) |
+| Intégrations fournisseurs | FIS + TCS BaNCS |
+| Environnements gérés | dev / staging / prod par service |
+| Migration CI | Jenkins → GitHub Actions |
+| Registre d'images | Harbor (auto-hébergé, scanné) |

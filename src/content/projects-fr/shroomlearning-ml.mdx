@@ -1,0 +1,107 @@
+---
+year: 2024
+title: 'ShroomLearning — Identification de Champignons par ML'
+htmlTitle: 'ShroomLearning —\nClassification ML de Champignons'
+description: 'Dataset mycologique scrapé + classifieurs Scikit-learn (SVM, Arbres de Décision, Forêt Aléatoire) pour identifier les champignons et évaluer leur comestibilité. Développé avec Python et Express.js.'
+heroImage: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - Python
+  - Scikit-learn
+  - SVM
+  - Arbres de Décision
+  - Pandas
+  - Jupyter
+  - Web Scraping
+  - Express.js
+---
+
+## Motivation
+
+L'identification de champignons est un problème de classification classique mais réellement utile. Les enjeux sont concrets — confondre une *Amanita phalloides* (Amanite phalloïde) avec un champignon comestible est fatal. Un modèle **précis mais capable d'expliquer son raisonnement** est préférable à un classifieur haute précision boîte noire dans ce domaine.
+
+Cela a orienté le choix des modèles : SVM et Arbres de Décision plutôt que des réseaux de neurones, parce que l'interprétabilité compte quand le cas d'usage implique la sécurité alimentaire.
+
+---
+
+## Dataset — Web Scraping
+
+Plutôt que d'utiliser le dataset UCI Mushroom de Kaggle (généré synthétiquement), j'ai scrapé des bases de données mycologiques réelles pour construire un dataset spécifique au domaine :
+
+```python
+# scraper/scrape_mushrooms.py
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+BASE_URL = "https://www.mycodb.fr/fiche.php"
+
+def scrape_species_page(species_url: str) -> dict | None:
+    try:
+        resp = requests.get(species_url, timeout=10,
+                           headers={"User-Agent": "ShroomLearning Research Bot"})
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        features = {}
+        feature_table = soup.find("table", class_="caracteristiques")
+        if not feature_table:
+            return None
+
+        for row in feature_table.find_all("tr"):
+            cells = row.find_all("td")
+            if len(cells) == 2:
+                features[cells[0].text.strip().lower()] = cells[1].text.strip()
+
+        return features
+    except Exception as e:
+        print(f"Erreur scraping {species_url}: {e}")
+        return None
+```
+
+---
+
+## Résultats des modèles
+
+| Modèle | Précision | Rappel (toxiques) | Interprétable |
+|---|---|---|---|
+| SVM (RBF) | 94.2% | 96.1% | Non |
+| Arbre de Décision | 91.8% | 93.4% | ✅ Oui |
+| Forêt Aléatoire | 96.7% | 97.2% | Partiel |
+
+Pour un usage réel, l'Arbre de Décision est le choix préféré : légèrement moins précis, mais la règle de décision peut être expliquée à l'utilisateur ("Si absence de volve ET lamelles blanches ET odeur d'amande → probablement comestible").
+
+---
+
+## Interface Express.js
+
+L'interface web permet de saisir les caractéristiques observées d'un champignon et retourne la prédiction avec le chemin de décision de l'arbre pour les modèles interprétables.
+
+```javascript
+// routes/predict.js
+router.post('/predict', async (req, res) => {
+  const features = req.body
+
+  // Appel au microservice Python ML
+  const response = await fetch('http://ml-service:5000/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(features)
+  })
+
+  const { prediction, confidence, decision_path } = await response.json()
+
+  res.json({
+    edible: prediction === 'edible',
+    confidence,
+    reasoning: decision_path  // Chemin de décision pour l'arbre
+  })
+})
+```
+
+---
+
+## Apprentissages
+
+Ce projet m'a appris l'importance du **choix du bon modèle pour le bon problème**. Dans des contextes à risque élevé, la précision maximale n'est pas toujours l'objectif principal — l'interprétabilité et la gestion des faux négatifs (classer toxique comme comestible) peuvent être tout aussi critiques.

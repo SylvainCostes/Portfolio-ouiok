@@ -1,0 +1,232 @@
+---
+year: 2025
+title: 'OBD2 Anti-Fraud Scanner — ESP32 & CAN Bus'
+htmlTitle: 'OBD2 Anti-Fraud Scanner\nESP32 & CAN Bus'
+description: 'Embedded automotive diagnostic tool using ESP32 and CAN transceiver to detect odometer fraud via multi-ECU coherence audit (ISO 15765-4 / UDS).'
+heroImage: 'https://images.unsplash.com/photo-1493238792000-8113da705763?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - ESP32
+  - CAN Bus
+  - ISO 15765-4
+  - UDS ISO-14229
+  - C / C++
+  - Embedded Systems
+  - Automotive
+  - Anti-Fraud
+---
+
+## The Problem
+
+Odometer fraud affects approximately 30-50% of used vehicles sold in Europe. The fraudster physically or electronically rolls back the odometer on the instrument cluster — but they rarely bother (or are unable) to alter **all** the ECUs that record mileage independently.
+
+This tool exploits that inconsistency.
+
+---
+
+## Hardware
+
+| Component | Role |
+|---|---|
+| **ESP32-WROOM-32** | Microcontroller — WiFi, BLE, 240MHz dual-core |
+| **SN65HVD230** | CAN bus transceiver (3.3V compatible) |
+| **OBD2 connector** | Vehicle interface |
+| **3.3V regulator** | Power supply from OBD2 12V pin |
+
+```
+    OBD2 Port (vehicle)
+         │  │
+   CAN-H ┘  └ CAN-L
+         │  │
+    ┌────┴──┴────┐
+    │ SN65HVD230 │   ← CAN transceiver (differential → TTL)
+    └────┬──┬────┘
+         TX RX (3.3V TTL)
+         │  │
+    ┌────┴──┴────┐
+    │   ESP32    │   ← TWAI (Two-Wire Automotive Interface)
+    │  + WiFi    │
+    └────────────┘
+         │
+    HTTP Server (WiFi AP or STA mode)
+         │
+    Browser dashboard
+```
+
+---
+
+## Protocol Stack
+
+### ISO 15765-4 (CAN-based OBDII transport)
+
+The ISO 15765-4 standard defines how OBD2 messages are framed over CAN (11-bit ID, 500kbps). Multi-byte responses use a segmentation protocol:
+
+```c
+// can_transport.c
+// CAN frame types (ISO 15765-2)
+#define FRAME_TYPE_SINGLE      0x00
+#define FRAME_TYPE_FIRST       0x10
+#define FRAME_TYPE_CONSECUTIVE 0x20
+#define FRAME_TYPE_FLOW_CTRL   0x30
+
+typedef struct {
+    uint8_t frame_type;
+    uint8_t length;
+    uint8_t data[7];
+} can_sf_t;  // Single Frame
+
+// Reassemble multi-frame ISO-TP message
+esp_err_t isotp_receive(can_message_t *frames, size_t count,
+                        uint8_t *out_buf, size_t *out_len) {
+    if ((frames[0].data[0] & 0xF0) == FRAME_TYPE_FIRST) {
+        uint16_t total_len = ((frames[0].data[0] & 0x0F) << 8)
+                              | frames[0].data[1];
+        uint8_t seq = 1;
+        size_t offset = 0;
+
+        // Copy data bytes from First Frame (bytes 2-7)
+        memcpy(out_buf, &frames[0].data[2], 6);
+        offset = 6;
+
+        // Send Flow Control (CTS)
+        send_flow_control(FC_FLAG_CTS);
+
+        // Assemble Consecutive Frames
+        for (size_t i = 1; i < count && offset < total_len; i++) {
+            uint8_t sn = frames[i].data[0] & 0x0F;
+            if (sn != (seq & 0x0F)) return ESP_ERR_INVALID_RESPONSE;
+            memcpy(out_buf + offset, &frames[i].data[1], 7);
+            offset += 7;
+            seq++;
+        }
+        *out_len = total_len;
+    }
+    return ESP_OK;
+}
+```
+
+---
+
+## UDS Service — Reading Mileage from ECUs
+
+UDS (ISO 14229) defines diagnostic services. **Service 0x22 (ReadDataByIdentifier)** reads specific data identifiers from ECUs. The mileage DID varies by manufacturer but commonly clusters around `0xE101`, `0xF40E`, or OEM-specific values.
+
+```c
+// uds_client.c
+#define UDS_RESP_POSITIVE  0x62  // Positive response to 0x22
+#define DID_ODOMETER       0xF40E
+
+esp_err_t uds_read_odometer(uint16_t did, uint32_t *mileage_km) {
+    uint8_t request[] = {0x22, (did >> 8) & 0xFF, did & 0xFF};
+
+    can_frame_t frame = {
+        .identifier = ECU_REQUEST_ID,   // 0x7DF (broadcast) or specific ECU ID
+        .data_length_code = 3,
+        .data = {request[0], request[1], request[2], 0, 0, 0, 0, 0}
+    };
+
+    ESP_ERROR_CHECK(twai_transmit(&frame, pdMS_TO_TICKS(100)));
+
+    can_frame_t response;
+    ESP_ERROR_CHECK(twai_receive(&response, pdMS_TO_TICKS(500)));
+
+    if (response.data[1] == UDS_RESP_POSITIVE) {
+        // DID echoed back in bytes 2-3, value starts at byte 4
+        *mileage_km = (response.data[4] << 16)
+                    | (response.data[5] << 8)
+                    | response.data[6];
+        return ESP_OK;
+    }
+
+    return ESP_ERR_INVALID_RESPONSE;
+}
+```
+
+---
+
+## The Fraud Detection Algorithm
+
+The core insight: a professional odometer rollback only modifies the **instrument cluster** (the speedometer). It rarely touches the **ABS ECU**, **ECM (Engine Control Module)**, or the **TCM (Transmission Control Module)** — all of which independently record engine revolutions, brake actuations, and gear cycles that correlate with distance traveled.
+
+```c
+// fraud_detection.c
+#define COHERENCE_THRESHOLD_KM  5000  // Acceptable delta between ECUs
+
+typedef struct {
+    uint32_t cluster_odometer;   // Instrument cluster (displayed mileage)
+    uint32_t ecu_engine_miles;   // Derived from ECM (fuel cycle count × avg MPG)
+    uint32_t abs_odometer;       // ABS module stored mileage
+    uint32_t tcm_odometer;       // Transmission control module
+} vehicle_mileage_t;
+
+fraud_result_t audit_mileage_coherence(vehicle_mileage_t *data) {
+    uint32_t values[3] = {
+        data->ecu_engine_miles,
+        data->abs_odometer,
+        data->tcm_odometer
+    };
+
+    // Sort to find median
+    for (int i = 0; i < 2; i++)
+        for (int j = i+1; j < 3; j++)
+            if (values[i] > values[j]) { uint32_t t = values[i]; values[i] = values[j]; values[j] = t; }
+
+    uint32_t median_km = values[1];
+    int32_t delta = (int32_t)median_km - (int32_t)data->cluster_odometer;
+
+    if (delta > COHERENCE_THRESHOLD_KM) {
+        return (fraud_result_t){
+            .is_fraud_suspected = true,
+            .displayed_km       = data->cluster_odometer,
+            .estimated_real_km  = median_km,
+            .delta_km           = delta,
+            .confidence         = (delta > 20000) ? HIGH : MEDIUM
+        };
+    }
+
+    return (fraud_result_t){ .is_fraud_suspected = false };
+}
+```
+
+---
+
+## Web Interface
+
+The ESP32 hosts an **asynchronous HTTP server** (using `esp-idf`'s `httpd` component). When connected to the device's WiFi AP, the mechanic opens a browser to view the audit report:
+
+```c
+// web_server.c
+httpd_uri_t audit_uri = {
+    .uri       = "/api/audit",
+    .method    = HTTP_GET,
+    .handler   = audit_handler,
+};
+
+esp_err_t audit_handler(httpd_req_t *req) {
+    vehicle_mileage_t mileage = {0};
+    scan_all_ecus(&mileage);
+
+    fraud_result_t result = audit_mileage_coherence(&mileage);
+
+    char json[512];
+    snprintf(json, sizeof(json),
+        "{\"fraud_suspected\":%s,\"displayed\":%lu,\"estimated\":%lu,\"delta\":%ld}",
+        result.is_fraud_suspected ? "true" : "false",
+        result.displayed_km, result.estimated_real_km, result.delta_km);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+```
+
+---
+
+## Key Learnings
+
+This project forced me to work at the intersection of **low-level embedded C**, **automotive protocols**, and **hardware electronics** — a stack far removed from cloud engineering but with transferable lessons:
+
+- Protocol debugging with a logic analyzer is the embedded equivalent of Wireshark
+- CAN bus arbitration and error handling behave like distributed systems consensus problems
+- The OBD2 "standard" is only loosely standardized — every manufacturer interprets DIDs differently

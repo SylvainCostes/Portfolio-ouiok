@@ -1,117 +1,60 @@
 ---
-import { Bookmarks } from '@icons/Bookmarks'
+import { ArgoCD } from '@icons/ArgoCD'
+import { Docker } from '@icons/Docker'
+import { Helm } from '@icons/Helm'
+import { Kubernetes } from '@icons/Kubernetes'
 import { Suitcase } from '@icons/Suitcase'
+import { Terraform } from '@icons/Terraform'
 
 import Link from '@/components/Link'
-import NotificationCard from '@/components/NotificationCard'
 
 import BentoBadge from '../BentoBadge'
+
+const tags = [
+  { label: 'Kubernetes / AKS', icon: Kubernetes },
+  { label: 'ArgoCD', icon: ArgoCD },
+  { label: 'Terraform', icon: Terraform },
+  { label: 'Helm', icon: Helm },
+  { label: 'Docker', icon: Docker },
+]
 ---
 
 <Link
-  href='/projects/bookmarked'
+  href='/projects/sgcib-payment-platform'
   class:list={[
-    'relative flex h-full flex-col gap-3 overflow-hidden rounded-[inherit] px-5 pb-8 pt-4',
-    'max-xs:pb-36 md:max-lg:gap-4'
+    'relative flex h-full flex-col gap-3 overflow-hidden rounded-[inherit] px-5 pb-4 pt-4',
+    'max-xs:pb-4 md:max-lg:gap-3'
   ]}
 >
-  <div class='space-y-5 max-md:z-40'>
+  <div class='space-y-5 z-10'>
     <BentoBadge
       icon={Suitcase}
       text='Featured work'
       className={{ component: 'w-fit' }}
     />
-    <div class='space-y-3 xs:max-md:w-1/2'>
-      <p class='text-xl leading-none'>Bookmarked</p>
+    <div class='space-y-3'>
+      <p class='text-xl leading-none'>SG CIB · Payment Platform</p>
       <p class='text-sm leading-relaxed text-slate-400'>
-        Effortlessly save and organize your favorite tweets in Notion using a
-        Telegram bot.
+        Kubernetes-native CI/CD pipeline on Azure Kubernetes Service at Société
+        Générale CIB — zero-downtime deployments, GitOps with ArgoCD.
       </p>
     </div>
   </div>
-  <div
-    class:list={[
-      'absolute top-[164px] self-center',
-      'max-xs:mt-4 max-[360px]:top-[172px]',
-      'xs:max-md:left-[calc(50%+16px)] xs:max-md:top-14 xs:max-md:scale-110'
-    ]}
-  >
-    <div
-      class:list={[
-        'relative flex flex-col items-center',
-        'bookmarked-notification-card'
-      ]}
-    >
-      <div
-        class:list={[
-          'pointer-events-none absolute z-30 h-[125%] w-[125%]',
-          'bg-gradient-to-t from-[var(--card-background)] to-transparent'
-        ]}
-      >
-      </div>
-      <NotificationCard
-        sender='Bookmarked'
-        time='Just now'
-        message='Your bookmark has been saved'
-        class:list={[
-          'z-20 text-slate-700 max-xs:w-[300px]',
-          'transition-all duration-300',
-          'group-hover:-mt-2 group-hover:scale-105',
-          'hidden-notification-card'
-        ]}
-        ><Bookmarks className='size-6' />
-      </NotificationCard>
 
-      <NotificationCard
-        sender='Bookmarked'
-        time='1m ago'
-        message='Bookmarking this thread'
-        class:list={[
-          'z-10 -mt-8 w-[88%] bg-slate-400 text-slate-800',
-          'transition-all duration-500',
-          'group-hover:-mt-2 group-hover:scale-105',
-          'hidden-notification-card'
-        ]}
-        ><Bookmarks className='size-6' />
-      </NotificationCard>
-    </div>
+  <div class='z-10 mt-auto flex flex-wrap gap-2'>
+    {
+      tags.map(({ label, icon: Icon }) => (
+        <span class='flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-zinc-300'>
+          <Icon className='size-3.5 shrink-0' />
+          {label}
+        </span>
+      ))
+    }
+  </div>
+
+  <!-- subtle background glow -->
+  <div
+    class='pointer-events-none absolute bottom-0 right-0 h-40 w-40 translate-x-10 translate-y-10 rounded-full bg-emerald-500/10 blur-3xl'
+  >
   </div>
 </Link>
-
-<script>
-  document.addEventListener('astro:page-load', () => {
-    if (!document.getElementById('bento')) return
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const hiddenNotificationCards = entry.target.querySelectorAll(
-          '.hidden-notification-card'
-        )
-        if (entry.isIntersecting) {
-          hiddenNotificationCards.forEach((notificationCard) => {
-            notificationCard.classList.add('show-notification-card')
-          })
-        }
-      })
-    })
-
-    const featuredWorkCard = document.querySelector(
-      '.bookmarked-notification-card'
-    )
-
-    observer.observe(featuredWorkCard!)
-  })
-</script>
-
-<style>
-  .hidden-notification-card {
-    scale: 0;
-    filter: blur(32px);
-    transition-all: all 0.3s;
-  }
-
-  .show-notification-card {
-    scale: 1 !important;
-    filter: blur(0);
-  }
-</style>

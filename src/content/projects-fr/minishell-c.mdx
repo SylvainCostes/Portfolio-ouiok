@@ -1,0 +1,131 @@
+---
+year: 2023
+title: 'Mini-Shell — Un Shell Unix construit from Scratch en C'
+htmlTitle: 'Mini-Shell — Shell Unix\nfrom Scratch en C'
+description: 'Un shell Unix fonctionnel implémentant fork/exec, pipes, redirections, gestion des signaux et contrôle des jobs — directement sur les primitives du noyau Linux.'
+heroImage: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - C
+  - Linux
+  - Programmation Système
+  - POSIX
+  - Gestion des Processus
+  - Gestion des Signaux
+  - Pipes
+---
+
+## Pourquoi construire un shell ?
+
+Un shell est la couche la plus fine possible entre l'intention de l'utilisateur et le noyau Linux. En en construire un, on est forcé de comprendre ce que `bash` fait des milliers de fois par jour de façon transparente : parser l'entrée, forker des processus, gérer les descripteurs de fichiers, et traiter les signaux.
+
+Ce projet faisait partie de mon cursus de **Licence 3 Informatique**, mais je l'ai étendu bien au-delà du cadre du TP pour comprendre le contrôle des jobs et les processus en arrière-plan.
+
+---
+
+## Fonctionnalités
+
+| Fonctionnalité | Statut | Notes |
+|---|---|---|
+| Exécution de commandes | ✅ | `execvp` avec résolution PATH |
+| Parsing des arguments | ✅ | Chaînes entre guillemets, caractères spéciaux |
+| Pipes (`\|`) | ✅ | Profondeur arbitraire (`cmd1 \| cmd2 \| cmd3`) |
+| Redirection entrée (`<`) | ✅ | `open()` + `dup2()` |
+| Redirection sortie (`>`, `>>`) | ✅ | Modes troncature et ajout |
+| Jobs en arrière-plan (`&`) | ✅ | Suivi avec `SIGCHLD` |
+| Gestion des signaux | ✅ | `Ctrl+C`, `Ctrl+Z`, `Ctrl+\` |
+| Builtins | ✅ | `cd`, `exit`, `jobs`, `fg`, `bg`, `history` |
+| Historique des commandes | ✅ | Buffer circulaire, style readline |
+
+---
+
+## Implémentation core
+
+### Parser
+
+Le premier défi est de parser correctement la ligne de commande — gérer les guillemets, les caractères d'échappement et les tokens spéciaux :
+
+```c
+// parser.c
+typedef enum {
+    TOKEN_WORD,
+    TOKEN_PIPE,
+    TOKEN_REDIRECT_IN,
+    TOKEN_REDIRECT_OUT,
+    TOKEN_REDIRECT_APPEND,
+    TOKEN_BACKGROUND,
+    TOKEN_EOF
+} token_type_t;
+
+token_t *tokenize(const char *input) {
+    token_t *tokens = calloc(MAX_TOKENS, sizeof(token_t));
+    int ti = 0;
+    const char *p = input;
+
+    while (*p) {
+        while (*p == ' ' || *p == '\t') p++;
+        if (!*p) break;
+
+        switch (*p) {
+            case '|': tokens[ti++] = (token_t){TOKEN_PIPE, NULL}; p++; break;
+            case '<': tokens[ti++] = (token_t){TOKEN_REDIRECT_IN, NULL}; p++; break;
+            case '>':
+                if (*(p+1) == '>') {
+                    tokens[ti++] = (token_t){TOKEN_REDIRECT_APPEND, NULL}; p += 2;
+                } else {
+                    tokens[ti++] = (token_t){TOKEN_REDIRECT_OUT, NULL}; p++;
+                }
+                break;
+            case '&': tokens[ti++] = (token_t){TOKEN_BACKGROUND, NULL}; p++; break;
+            case '"': {
+                const char *start = ++p;
+                while (*p && *p != '"') p++;
+                tokens[ti++] = (token_t){TOKEN_WORD, strndup(start, p - start)};
+                if (*p) p++;
+                break;
+            }
+            default: {
+                const char *start = p;
+                while (*p && !strchr(" \t|<>&\"", *p)) p++;
+                tokens[ti++] = (token_t){TOKEN_WORD, strndup(start, p - start)};
+            }
+        }
+    }
+    tokens[ti] = (token_t){TOKEN_EOF, NULL};
+    return tokens;
+}
+```
+
+### Exécution avec fork/exec
+
+```c
+// executor.c
+pid_t execute_command(command_t *cmd, int stdin_fd, int stdout_fd) {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        // Processus enfant
+        if (stdin_fd != STDIN_FILENO) {
+            dup2(stdin_fd, STDIN_FILENO);
+            close(stdin_fd);
+        }
+        if (stdout_fd != STDOUT_FILENO) {
+            dup2(stdout_fd, STDOUT_FILENO);
+            close(stdout_fd);
+        }
+
+        execvp(cmd->argv[0], cmd->argv);
+        perror(cmd->argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    return pid;
+}
+```
+
+---
+
+## Apprentissages
+
+Construire un shell m'a forcé à comprendre des primitives système que j'utilisais sans vraiment les connaître : pourquoi `fork()` retourne deux fois, comment `dup2()` redirige les descripteurs, pourquoi les signaux interrompent les appels système. Aucun cours magistral ne l'enseigne aussi bien qu'une heure à déboguer un pipe qui se bloque.

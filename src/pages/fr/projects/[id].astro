@@ -1,0 +1,42 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
+import { getCollection, render } from 'astro:content'
+import readingTime from 'reading-time'
+
+import ContentWrapper from '@/components/ContentWrapper.astro'
+import ProjectLayout from '@/layouts/ProjectLayout'
+import client from '@/lib/client'
+
+interface Props extends InferGetStaticPropsType<typeof getStaticPaths> {}
+
+export const getStaticPaths = (async () => {
+  const projectEntries = await getCollection('projectsFr')
+
+  return projectEntries.map((entry) => ({
+    params: { id: entry.id },
+    props: { entry }
+  }))
+}) satisfies GetStaticPaths
+
+const { entry } = Astro.props
+const { Content, headings } = await render(entry)
+
+const getLastUpdatedTime = client.api.github['last-updated-file']
+const { latestCommitUrl, lastUpdatedTime } = await getLastUpdatedTime
+  .$get({ query: { path: `projects-fr/${entry.id}.mdx` } })
+  .then((res) => res.json())
+
+const { minutes, words } = readingTime(entry.body!)
+---
+
+<ProjectLayout
+  headings={headings}
+  slug={entry.id}
+  readingTime={Math.ceil(minutes)}
+  wordsCount={words}
+  updatedDate={new Date(lastUpdatedTime)}
+  latestCommitUrl={latestCommitUrl}
+  {...entry.data}
+>
+  <ContentWrapper content={Content} />
+</ProjectLayout>

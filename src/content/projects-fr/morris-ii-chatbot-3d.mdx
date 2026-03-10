@@ -1,0 +1,70 @@
+---
+year: 2025
+title: 'Morris II — 3e place Hackathon National (Chatbot 3D IA)'
+htmlTitle: 'Morris II — Chatbot 3D IA\n🥉 3e place nationale'
+description: "3e place sur 267 équipes à la Nuit de L'Info 2025. Un chatbot vocal 3D avec lip sync en temps réel construit en 10 heures avec FastAPI, Docker, Three.js, OpenAI et ElevenLabs."
+heroImage: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - FastAPI
+  - Docker
+  - Three.js
+  - Rhubarb Lipsync
+  - OpenAI
+  - ElevenLabs
+  - LLM
+  - Blender
+  - Hackathon
+links:
+  - name: 'Article complet'
+    icon: 'Web'
+    url: '/fr/blog/chatbot-3d-hackathon-viveris'
+---
+
+## Résultat
+
+🥉 **3e place — Challenge Viveris**  
+🏆 **Nuit de L'Info 2025** — Hackathon national français  
+📊 267 équipes en compétition simultanée, ~1000 participants
+
+---
+
+## Le Challenge
+
+Le challenge Viveris : construire un agent conversationnel innovant avec une interface originale en **10 heures** (coucher au lever du soleil).
+
+Notre réponse : **Jean-Michel Apeuprèx** — le Druide Digital Résistant, un personnage gaulois délibérément absurde qui conseille les villageois sur la résistance face à "Big Tech", incarné dans un personnage 3D animé avec mouvements de lèvres synchronisés.
+
+---
+
+## Ce qui a fait la différence
+
+Le secret n'était pas le code — c'était **tout containeriser à 21h30** avant d'écrire la moindre ligne de logique métier.
+
+4 services Docker. 1 `docker-compose up`. Tout le monde sur le même environnement en 60 secondes.
+
+```
+[Texte saisi] → [OpenAI GPT-4o-mini] → [ElevenLabs TTS] → [Rhubarb Lip Sync] → [Three.js]
+```
+
+**Lire l'article complet sur l'infrastructure** → [chatbot-3d-hackathon-viveris](/fr/blog/chatbot-3d-hackathon-viveris)
+
+---
+
+## Stack Technique
+
+| Couche | Technologie | Rôle |
+|---|---|---|
+| API | FastAPI (Python) | Serveur WebSocket + orchestration |
+| LLM | OpenAI (GPT-4o-mini) | Inférence cloud, sortie JSON structurée |
+| TTS | ElevenLabs | Synthèse vocale française haute qualité |
+| Lip Sync | Rhubarb Lipsync | WAV → JSON de cues de bouche |
+| 3D | Three.js + Blender | Rendu du personnage + morphTargets |
+| Déploiement | Koyeb | Conteneur toujours actif, sans cold start |
+
+---
+
+## Origine du nom de l'équipe
+
+L'équipe s'est nommée **Morris II** en référence au papier [Morris Worm 2](https://arxiv.org/abs/2403.02817) — un clin d'œil à la culture cybersécurité au sein de l'équipe.

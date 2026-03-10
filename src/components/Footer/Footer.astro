@@ -1,6 +1,5 @@
 ---
 import { ArrowOutward } from '@icons/ArrowOutward'
-import { X } from '@icons/X'
 
 import Link from '@/components/Link'
 import { mainMetaData } from '@/lib/metaData'
@@ -19,17 +18,16 @@ type FooterContent = {
 }
 
 const socialMediaData = [
-  ...SOCIAL_MEDIA_DATA,
-  { icon: X, href: 'https://twitter.com/sylvaincostes', name: 'twitter' }
+  ...SOCIAL_MEDIA_DATA
 ]
 
 const FOOTER_CONTENTS: FooterContent[] = [
   {
     title: 'Me',
     links: [
+      { text: 'About', href: '/about' },
       { text: 'Projects', href: '/projects' },
-      { text: 'Blog', href: '/blog' },
-      { text: 'Bookmarks', href: '/bookmarks' }
+      { text: 'Blog', href: '/blog' }
     ]
   },
   {

@@ -168,14 +168,37 @@
 
   .scene-container {
     perspective: 1200px;
+        mask-image: radial-gradient(
+      ellipse 60% 90% at center,
+      black 60%,
+      transparent 100%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 60% 90% at center,
+      black 60%,
+      transparent 100%
+    );
+
   }
 
   .scene {
     @apply relative;
     transform-style: preserve-3d;
-    transform: rotateX(60deg) rotateZ(-45deg);
+    transform: rotateX(60deg) rotateZ(-45deg) scale(0.5);
     width: 0;
     height: 0;
+  }
+
+  @media (min-width: 640px) {
+    .scene {
+      transform: rotateX(60deg) rotateZ(-45deg) scale(0.65);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .scene {
+      transform: rotateX(60deg) rotateZ(-45deg) scale(1);
+    }
   }
 
   /* Grille */

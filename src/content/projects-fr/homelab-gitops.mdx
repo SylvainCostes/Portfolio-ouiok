@@ -1,0 +1,100 @@
+---
+year: 2024
+title: 'Homelab Personnel — Infrastructure GitOps Self-Hébergée'
+htmlTitle: 'Homelab Personnel —\nGitOps Self-Hébergé'
+description: 'Infrastructure self-hébergée zéro-trust sur Raspberry Pi 4 : Traefik, Docker, Cloudflare Tunnel, CI/CD Gitea. Ce portfolio tourne dessus.'
+heroImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2670&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+tags:
+  - Raspberry Pi
+  - Docker
+  - Traefik
+  - Cloudflare Tunnel
+  - Gitea Actions
+  - Portainer
+  - Watchtower
+  - Zero Trust
+  - Self-Hosted
+links:
+  - name: 'Article complet'
+    icon: 'Web'
+    url: '/fr/blog/homelab-raspberry-pi-devops'
+---
+
+## Vue d'ensemble
+
+Une infrastructure self-hébergée tournant sur un **Raspberry Pi 4 (8 Go)** qui sert de sandbox DevOps personnel. Toute la stack utilise des patterns production-grade : GitOps pour les déploiements, Cloudflare Zero Trust pour l'accès externe sécurisé, et monitoring automatisé avec alerting.
+
+Ce projet est une expérience vivante — chaque pattern que j'applique au travail (ArgoCD, Helm, GitOps) est testé ici en premier, sans filet de sécurité.
+
+---
+
+## Stack en un coup d'œil
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Raspberry Pi 4 · 8 Go RAM · SSD 256 Go (USB 3.0)  │
+│                                                     │
+│  Cloudflare Tunnel ──▶ Traefik ──▶ Services         │
+│                         (reverse proxy + TLS)       │
+│                                                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │Portainer │ │  Gitea   │ │  Uptime  │            │
+│  │(UI Docker)│ │(Git+CI/CD)│ │  Kuma  │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │Nextcloud │ │Vault-    │ │Watch-    │            │
+│  │(fichiers)│ │warden   │ │tower    │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Décisions de conception clés
+
+**Cloudflare Tunnel** plutôt que d'ouvrir des ports — Pas de redirection de port dans le routeur, pas d'IP exposée, protection DDoS par défaut, et certificats TLS gratuits pour tous les sous-domaines.
+
+**Traefik** avec routage par labels Docker — Ajouter un nouveau service à la plateforme se fait en une ligne dans le docker-compose. Traefik le détecte automatiquement via le socket Docker.
+
+**Gitea Actions** pour le CI/CD — Runners self-hébergés, aucune minute GitHub Actions consommée. Même syntaxe YAML, compétences directement transférables en contexte professionnel.
+
+---
+
+## Exemple de pipeline CI/CD
+
+```yaml
+# .gitea/workflows/deploy.yml
+name: Deploy Service
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t ${{ secrets.REGISTRY }}/my-service:${{ github.sha }} .
+
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.REGISTRY }}/my-service:latest
+            docker compose -f /opt/services/my-service/compose.yml up -d
+            docker image prune -f
+```
+
+---
+
+## Ce que ça apprend que la production n'apprend pas
+
+Gérer sa propre infra force à s'occuper de choses que les services managés abstraient : l'usure des cartes SD, la rotation des logs pour éviter de remplir le disque, les mises à jour non supervisées sans casser les conteneurs en cours d'exécution, et le vrai coût de l'absence de health check sur un service qui démarre lentement.

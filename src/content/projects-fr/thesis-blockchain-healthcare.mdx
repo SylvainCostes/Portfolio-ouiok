@@ -1,0 +1,123 @@
+---
+year: 2025
+title: 'Mémoire M1 — Consensus Blockchain pour la Sécurité des Données de Santé'
+htmlTitle: 'Mémoire M1 — Blockchain\npour la Sécurité Santé'
+description: 'Note 18/20. Un pipeline Dev-Sec-Law-Ops combinant consensus BFT, ZK-Proofs et IPFS pour garantir la conformité RGPD/HIPAA by design pour les Dossiers de Santé Électroniques.'
+heroImage: 'https://images.unsplash.com/photo-1639762681057-408e52192e55?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+type: 'thesis'
+company: 'Université Paris Nanterre — M1 MIAGE'
+role: 'Mémoire de recherche'
+period: '2025'
+tags:
+  - Blockchain
+  - BFT / PBFT
+  - ZK-Proofs
+  - IPFS
+  - RGPD / HIPAA
+  - SLR
+  - Santé
+  - Recherche
+---
+
+## Contexte académique
+
+**Master 1 MIAGE — Université Paris Nanterre**  
+Tuteur enseignant : **Mme Marta Rukoz**, Professeur des universités  
+Responsable du master : **M. François Delbot**, Maître de conférences  
+Maître d'apprentissage : **M. Rémi Masson**, Manager — Audioptic Trade Services (Optic 2000)  
+Soutenu le **12 juin 2025** · Note : **18 / 20**
+
+---
+
+## Problématique
+
+La numérisation des systèmes de santé génère un volume sans précédent de données médicales sensibles. Ces données doivent simultanément satisfaire trois exigences contradictoires :
+
+- **Disponibilité** : un médecin doit pouvoir accéder à un dossier en urgence, depuis n'importe quel établissement
+- **Confidentialité** : les données de santé sont parmi les plus sensibles au sens du RGPD (et HIPAA aux États-Unis)
+- **Auditabilité** : chaque accès doit être tracé et prouvable pour la conformité réglementaire
+
+Les systèmes centralisés traditionnels ne peuvent pas satisfaire ces trois propriétés sans introduire un point unique de défaillance ou de confiance. La blockchain, registre distribué et immuable, apparaît comme une piste prometteuse — à condition de choisir les bons protocoles de consensus et d'y adjoindre les mécanismes cryptographiques adaptés.
+
+---
+
+## Méthode — Revue Systématique (SLR)
+
+Ce mémoire est une **Systematic Literature Review (SLR)** conduite selon la méthodologie PICOC sur la période 2022–2025. Le corpus final comprend **28 articles peer-reviewed** issus de sources comme IEEE Xplore, ACM Digital Library et PubMed.
+
+**Questions de recherche :**
+
+| ID | Question |
+|---|---|
+| RQ1 | Quels mécanismes de consensus sont utilisés dans les solutions blockchain pour sécuriser les EHR ? |
+| RQ2 | Quels défis techniques et réglementaires se posent lors de l'intégration blockchain dans les systèmes EHR ? |
+
+---
+
+## Principaux mécanismes de consensus étudiés
+
+L'analyse du corpus distingue cinq familles de consensus, chacune présentant des compromis distincts :
+
+**Proof-of-Work (PoW)** — connu, robuste, mais la consommation énergétique dépasse de deux ordres de grandeur un PBFT dans un réseau permissionné comparable. Inadapté au contexte santé.
+
+**Proof-of-Stake (PoS)** — plus économe, mais la sécurité repose sur le capital engagé, peu pertinent dans un réseau de consortiums hospitaliers sans token économique natif.
+
+**PBFT et variantes BFT** — tolérance aux fautes byzantines déterministe, finality immédiate (pas de fork), consommation faible. Le réseau supporte jusqu'à *f* nœuds malveillants si *n ≥ 3f + 1*. Particulièrement adapté aux consortiums de santé où les participants sont connus et enregistrés. Le débit peut varier du simple au triple selon la variante BFT retenue.
+
+**Raft** — consensus classique non-BFT, tolérant les pannes de nœuds honnêtes mais pas les comportements byzantins. Utile en contexte fermé très contrôlé.
+
+**Proof-of-Authority (PoA)** — chaque validateur est identifié par un certificat (X.509). Simple, performant, adapté aux environnements permissionnés où l'identité est auditée.
+
+**Conclusion RQ1** : dans un réseau permissionné de santé, **les algorithmes BFT et PoA** offrent le meilleur équilibre sécurité / performance / consommation.
+
+---
+
+## Défis techniques & réglementaires
+
+### Tension immuabilité ↔ droit à l'oubli (RGPD)
+
+La nature immuable des blocs entre en contradiction directe avec l'article 17 du RGPD (droit à l'effacement). Deux solutions émergent du corpus :
+
+- **Chameleon hashes** : fonctions de hachage permettant la réécriture contrôlée d'un bloc par une autorité désignée (ex. le patient), sans invalider la chaîne
+- **Stockage off-chain** : les données médicales brutes (imagerie, comptes rendus) sont chiffrées et stockées sur IPFS ou cloud sécurisé ; seul le hash de contenu (CID) est ancré on-chain. La suppression des données off-chain satisfait le droit à l'oubli sans modifier la blockchain
+
+### Preuves à divulgation nulle (ZKP)
+
+Les ZK-Proofs permettent de **prouver le respect d'une contrainte sans révéler les données sous-jacentes** — par exemple : prouver qu'un patient a donné son consentement à un accès à une date donnée, sans révéler son identité ni les données accédées. Cela répond à la fois aux exigences de confidentialité RGPD et d'auditabilité réglementaire.
+
+### Gouvernance et conformité by design
+
+Le corpus souligne la nécessité d'une approche **"compliance-by-design"** (que nous conceptualisons sous le terme **Dev-Sec-Law-Ops**) : intégrer les experts techniques, juridiques et cliniciens dès la conception, plutôt que de traiter la conformité comme une couche ajoutée a posteriori. Cela implique :
+
+- Traçabilité et auditabilité ancrées dans le protocole
+- Gouvernance claire des droits d'accès (smart contracts de consentement)
+- Révocabilité des accès prouvable cryptographiquement
+
+---
+
+## Recommandations et perspectives
+
+Le mémoire conclut sur des recommandations pour le passage à des prototypes industriels :
+
+1. Privilégier **PBFT ou PoA** pour les réseaux de consortiums hospitaliers
+2. Adopter une **architecture hybride** : smart contracts on-chain + stockage chiffré IPFS off-chain
+3. Intégrer les **ZKP** pour les preuves de consentement et d'accès
+4. Prévoir les **chameleon hashes** dès la conception pour gérer le droit à l'effacement RGPD
+5. Mener des **audits externes et tests en environnement réel** avant tout déploiement à grande échelle
+6. Associer juristes, cliniciens et ingénieurs dès la phase de cadrage
+
+---
+
+## Résumé
+
+| Élément | Détail |
+|---|---|
+| Type | Systematic Literature Review (SLR) |
+| Corpus | 28 articles peer-reviewed, 2022–2025 |
+| Consensus recommandés | BFT / PoA (réseaux permissionnés) |
+| Conformité RGPD | Chameleon hashes + stockage off-chain IPFS |
+| Confidentialité | Zero-Knowledge Proofs (ZKP) |
+| Concept original | Dev-Sec-Law-Ops (compliance-by-design) |
+| Note | **18 / 20** |

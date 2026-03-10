@@ -1,0 +1,263 @@
+---
+year: 2024
+title: 'Aegis Protocol — DAO Governance Smart Contracts'
+htmlTitle: 'Aegis Protocol —\nDAO Governance'
+description: 'Decentralized governance protocol with Solidity smart contracts: on-chain proposals, token-weighted voting, timelock execution, and Hardhat test suite.'
+heroImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - Solidity
+  - Hardhat
+  - Ethers.js
+  - ERC-20
+  - OpenZeppelin
+  - Smart Contracts
+  - Web3
+  - DAO
+links:
+  - name: 'GitHub'
+    icon: 'Github'
+    url: 'https://github.com/sylvaincostes/aegis-protocol'
+---
+
+## Concept
+
+**Aegis Protocol** is a DAO (Decentralized Autonomous Organization) governance system that allows token holders to propose, vote on, and execute protocol changes — entirely on-chain with no trusted intermediary.
+
+The challenge in DAO design is preventing governance attacks: a whale acquiring tokens right before a vote, voting for a malicious proposal, then dumping the tokens. Aegis addresses this with a snapshot mechanism and a timelock executor.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Aegis Governance Stack                 │
+│                                                         │
+│  ┌──────────────────┐    ┌───────────────────────────┐  │
+│  │   AegisToken     │    │    AegisGovernor          │  │
+│  │   (ERC-20 +      │    │  (OpenZeppelin Governor)  │  │
+│  │    ERC-20Votes)  │    │  - propose()              │  │
+│  │                  │───▶│  - castVote()             │  │
+│  │  vote weight =   │    │  - execute()              │  │
+│  │  past snapshot   │    │  - quorum: 4% of supply   │  │
+│  └──────────────────┘    └──────────┬────────────────┘  │
+│                                     │ queues proposals   │
+│                          ┌──────────▼────────────────┐  │
+│                          │    TimelockController      │  │
+│                          │  MinDelay: 2 days          │  │
+│                          │  Executor: governor only   │  │
+│                          └───────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+The **timelock** is critical: even if a malicious proposal passes the vote, there is a 2-day delay before execution. This gives honest token holders time to exit or counter the attack.
+
+---
+
+## AegisToken — Governance Token
+
+```solidity
+// contracts/AegisToken.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title AegisToken
+ * @dev ERC-20 governance token with vote delegation and snapshot support.
+ *
+ * Voting power is based on token balance at proposal snapshot block,
+ * NOT at vote time — prevents last-minute token acquisition attacks.
+ */
+contract AegisToken is ERC20Votes, Ownable {
+    uint256 public constant MAX_SUPPLY = 1_000_000 * 10**18; // 1M tokens
+
+    constructor(address initialOwner)
+        ERC20("Aegis Protocol Token", "AEGIS")
+        EIP712("Aegis Protocol Token", "1")
+        Ownable(initialOwner)
+    {
+        // Mint initial supply to deployer for distribution
+        _mint(initialOwner, MAX_SUPPLY);
+    }
+
+    /**
+     * @dev Override required by ERC20Votes — tracks vote checkpoints.
+     * Users must call delegate(address(self)) to activate voting power.
+     */
+    function _update(address from, address to, uint256 value)
+        internal override(ERC20Votes)
+    {
+        super._update(from, to, value);
+    }
+}
+```
+
+---
+
+## AegisGovernor — Proposal & Voting Engine
+
+```solidity
+// contracts/AegisGovernor.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/governance/Governor.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
+
+contract AegisGovernor is
+    Governor,
+    GovernorSettings,
+    GovernorCountingSimple,
+    GovernorVotes,
+    GovernorVotesQuorumFraction,
+    GovernorTimelockControl
+{
+    constructor(IVotes _token, TimelockController _timelock)
+        Governor("AegisGovernor")
+        GovernorSettings(
+            1 days,    // Voting delay: 1 day after proposal
+            1 weeks,   // Voting period: 1 week
+            10_000e18  // Proposal threshold: 10,000 tokens to propose
+        )
+        GovernorVotes(_token)
+        GovernorVotesQuorumFraction(4)  // 4% of total supply needed for quorum
+        GovernorTimelockControl(_timelock)
+    {}
+
+    // Required by Solidity multiple inheritance
+    function quorum(uint256 blockNumber)
+        public view override(Governor, GovernorVotesQuorumFraction)
+        returns (uint256)
+    { return super.quorum(blockNumber); }
+
+    function state(uint256 proposalId)
+        public view override(Governor, GovernorTimelockControl)
+        returns (ProposalState)
+    { return super.state(proposalId); }
+
+    function _queueOperations(
+        uint256 proposalId, address[] memory targets,
+        uint256[] memory values, bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint48)
+    { return super._queueOperations(proposalId, targets, values, calldatas, descriptionHash); }
+
+    function _executeOperations(
+        uint256 proposalId, address[] memory targets,
+        uint256[] memory values, bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl)
+    { super._executeOperations(proposalId, targets, values, calldatas, descriptionHash); }
+
+    function _cancel(
+        address[] memory targets, uint256[] memory values,
+        bytes[] memory calldatas, bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint256)
+    { return super._cancel(targets, values, calldatas, descriptionHash); }
+
+    function _executor()
+        internal view override(Governor, GovernorTimelockControl)
+        returns (address)
+    { return super._executor(); }
+}
+```
+
+---
+
+## Hardhat Tests
+
+```typescript
+// test/AegisGovernor.test.ts
+import { ethers } from "hardhat"
+import { expect } from "chai"
+import { mine } from "@nomicfoundation/hardhat-network-helpers"
+
+describe("AegisGovernor", () => {
+  async function deployFixture() {
+    const [deployer, voter1, voter2, attacker] = await ethers.getSigners()
+
+    const Token = await ethers.getContractFactory("AegisToken")
+    const token = await Token.deploy(deployer.address)
+
+    // Distribute tokens
+    await token.transfer(voter1.address, ethers.parseEther("50000"))
+    await token.transfer(voter2.address, ethers.parseEther("30000"))
+    // Attacker gets tokens but forgets to delegate — attack fails
+    await token.transfer(attacker.address, ethers.parseEther("100000"))
+
+    // Voters delegate to themselves (required to activate voting power)
+    await token.connect(voter1).delegate(voter1.address)
+    await token.connect(voter2).delegate(voter2.address)
+    // Attacker doesn't delegate — their tokens have zero voting power
+
+    const Timelock = await ethers.getContractFactory("TimelockController")
+    const timelock = await Timelock.deploy(
+      2 * 24 * 3600,  // 2-day min delay
+      [], [], deployer.address
+    )
+
+    const Governor = await ethers.getContractFactory("AegisGovernor")
+    const governor = await Governor.deploy(token.target, timelock.target)
+
+    return { governor, token, timelock, deployer, voter1, voter2, attacker }
+  }
+
+  it("undelegated tokens have no voting power", async () => {
+    const { token, attacker } = await deployFixture()
+    const votes = await token.getVotes(attacker.address)
+    expect(votes).to.equal(0n)
+  })
+
+  it("proposal reaches quorum and passes", async () => {
+    const { governor, token, voter1, voter2 } = await deployFixture()
+
+    // Create a proposal (encode calldata for an arbitrary action)
+    const calldata = token.interface.encodeFunctionData("transfer", [
+      voter1.address,
+      ethers.parseEther("1")
+    ])
+
+    const tx = await governor.connect(voter1).propose(
+      [token.target], [0n], [calldata],
+      "Transfer tokens: Proposal #1"
+    )
+    const receipt = await tx.wait()
+    const proposalId = receipt!.logs[0].topics[1]
+
+    // Mine past voting delay
+    await mine(1 * 24 * 3600 / 12 + 1)
+
+    // Vote
+    await governor.connect(voter1).castVote(proposalId, 1)  // For
+    await governor.connect(voter2).castVote(proposalId, 1)  // For
+
+    // Mine past voting period
+    await mine(7 * 24 * 3600 / 12)
+
+    const state = await governor.state(proposalId)
+    expect(state).to.equal(4n)  // ProposalState.Succeeded
+  })
+})
+```
+
+---
+
+## Security Considerations
+
+The three main governance attack vectors and how Aegis mitigates them:
+
+| Attack | Mitigation |
+|---|---|
+| **Flash loan voting** | Snapshot voting power at proposal creation block — borrowed tokens can't vote |
+| **Governance takeover** | 4% quorum + 1-week voting period makes accumulating enough votes expensive and public |
+| **Malicious proposal execution** | 2-day timelock gives community time to react and exit |
+| **Proposal spam** | 10,000 token threshold to propose prevents noise |

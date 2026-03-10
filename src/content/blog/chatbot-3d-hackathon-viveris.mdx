@@ -1,0 +1,326 @@
+---
+title: "From Zero to 3rd Place in 10 Hours: Shipping a 3D AI Chatbot at Nuit de L'info"
+description: "How we built a production-ready 3D vocal chatbot in one night — and why the Docker setup and deployment stack were just as critical as the code."
+heroImage: https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?q=80&w=2832&auto=format&fit=crop
+pubDate: 2026-01-15
+tags:
+  - docker
+  - devops
+  - fastapi
+  - threejs
+  - llm
+  - hackathon
+---
+
+## TL;DR
+
+10 hours. One night. A 3D conversational agent with lip sync, synthetic voice, and the absurd personality of a Gaulish druid. 3rd place out of 267 teams, Viveris challenge.
+
+This write-up covers both **the technical pipeline** (how we connected OpenAI, ElevenLabs, and Rhubarb together) and **the 3D pipeline** (how the avatar was designed in Blender with Mixamo animations). Because a beautiful demo that only runs locally is a demo that dies on presentation day.
+
+---
+
+## Context: Nuit de L'info 2025
+
+**Nuit de L'info** is a French national hackathon that takes place in a single night — from sunset to sunrise. Teams from across France compete on multiple simultaneous challenges proposed by partner companies.
+
+Our challenge: **Viveris**, which asked teams to design an original conversational agent with an innovative interface.
+
+Our answer: **Jean-Michel Apeupréx**, the Resistant Digital Druid — a deliberately absurd Gaulish character who advises villagers on resisting "Big Tech" (the Romans). Embodied in a 3D animated character with lip sync synchronized to a synthesized voice.
+
+The team: **Morris II**.
+
+---
+
+## L'architecture globale
+
+```
+┌──────────────────────────────────────────────────────┐
+│                     Browser                          │
+│  React + Three.js  ──  Audio Player                  │
+│  (3D Avatar / Lip Sync)                              │
+└────────────────────┬─────────────────────────────────┘
+                     │ HTTP POST /chat
+┌────────────────────▼─────────────────────────────────┐
+│            FastAPI (Koyeb, 24/7)                     │
+│                                                      │
+│  ┌─────────────────┐    ┌──────────────────────┐    │
+│  │   OpenAI API    │    │  ElevenLabs API      │    │
+│  │  GPT-4o-mini    │    │  TTS (voice fr)      │    │
+│  └────────┬────────┘    └──────────┬───────────┘    │
+│           │                        │                 │
+│  ┌────────▼────────────────────────▼───────────┐    │
+│  │  FFmpeg (mp3→wav) + Rhubarb (lip sync JSON) │    │
+│  └─────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────┘
+```
+
+A single Docker service deployed continuously on Koyeb. No local model — the OpenAI and ElevenLabs APIs handle the AI and voice, which keeps memory usage within the constraints of a free hosting tier.
+
+---
+
+## Architecture Choice: Why Containerize Everything From the Start
+
+This was the first strategic decision of the night, made at 9:30 PM before writing a single line of business logic.
+
+### The Problem Without Docker
+
+In a hackathon, every team member has a different environment:
+- Incompatible Python versions (`3.10` vs `3.12`)
+- `ffmpeg` missing on some machines (required by Rhubarb)
+- Rhubarb Lip Sync only available as a Linux binary
+- Windows/Mac/Linux with different paths
+
+Without containerization, you spend 2 hours debugging `ModuleNotFoundError` instead of building the product.
+
+### The Solution: A `Dockerfile` as a Team Contract
+
+We chose a **single service** (vs Docker Compose multi-services) because we were targeting a Koyeb deployment at the end of the night — one container, one image to push.
+
+```dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Dépendances système : ffmpeg (conversion mp3→wav) et le binaire Rhubarb
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Rhubarb Lipsync (binaire Linux pré-compilé)
+COPY bin/ ./bin/
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 10000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+```
+
+The critical point: `ffmpeg` and the `rhubarb` binary **must** be in the Linux image. You can't install them via `pip` — that's why the Dockerfile is essential, even for a hackathon. **Result: zero onboarding friction, and a deployment via `docker push`.**
+
+---
+
+## Response Generation Pipeline
+
+The magic of the project was this chain:
+
+```
+[Text Input] → [OpenAI GPT-4o-mini] → [ElevenLabs TTS] → [Rhubarb Lip Sync] → [HTTP] → [Three.js]
+```
+
+### 1. LLM with OpenAI GPT-4o-mini
+
+We chose **GPT-4o-mini** via the OpenAI API. No local model — in a hackathon, reliability comes first over data sovereignty.
+
+The main constraint: forcing the model to respond in **structured JSON** with the text, facial expression, and animation to play. For this, `response_format={"type": "json_object"}` is a hackathon's best friend.
+
+```python
+completion = client.chat.completions.create(
+    model="gpt-4o-mini",
+    max_tokens=250,
+    temperature=0.8,
+    response_format={"type": "json_object"},
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+)
+
+data = json.loads(completion.choices[0].message.content)
+messages = data.get("messages", [])
+# Chaque message : { text, facialExpression, animation }
+```
+
+The system prompt defines the personality of **Jean-Michel Apeupréx**: a Gaulish druid who resists "Big Tech" (the Romans), proposes plant-based solutions for computer problems, and never responds seriously.
+
+### 2. Text-to-Speech with ElevenLabs
+
+We used **ElevenLabs** for voice synthesis — well above Coqui TTS in quality, and the free API tier was sufficient for one night.
+
+```python
+async def generate_audio_elevenlabs(text: str, filename: str):
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": ELEVEN_LABS_API_KEY
+    }
+    data = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {"stability": 0.4, "similarity_boost": 0.6}
+    }
+    response = requests.post(url, json=data, headers=headers)
+    with open(filename, "wb") as f:
+        f.write(response.content)
+```
+
+The `eleven_multilingual_v2` model handles French natively — no need to hack the target language.
+
+### 3. Lip Sync with Rhubarb
+
+Rhubarb Lip Sync analyzes a `.wav` file and generates **temporal phonemes** (`mouthCues`) in JSON format. This JSON is sent to the frontend to animate the 3D face mesh's morph targets.
+
+Full audio pipeline:
+```
+ElevenLabs → .mp3 → FFmpeg → .wav → Rhubarb → .json (mouthCues)
+```
+
+```python
+async def lip_sync_message(message_id: int):
+    mp3_file = f"audios/message_{message_id}.mp3"
+    wav_file = f"audios/message_{message_id}.wav"
+    json_file = f"audios/message_{message_id}.json"
+
+    # MP3 → WAV (Rhubarb requires WAV)
+    exec_command(["ffmpeg", "-y", "-i", mp3_file, wav_file])
+
+    # WAV → mouthCues JSON
+    exec_command(["rhubarb", "-f", "json", "-o", json_file, wav_file, "-r", "phonetic"])
+```
+
+Rhubarb outputs mouth position codes (`A`, `B`, `C`... `X`) with their timestamps. The Three.js frontend maps these codes to the avatar's facial **morph targets**.
+
+### 4. The FastAPI Endpoint That Brings It All Together
+
+Single endpoint `POST /chat` — no WebSocket, no streaming needed for a hackathon:
+
+```python
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    user_message = request.message or "Bonjour"
+
+    # 1. LLM → structured JSON
+    completion = client.chat.completions.create(...)
+    messages = json.loads(completion.choices[0].message.content)["messages"]
+
+    for i, msg in enumerate(messages):
+        # 2. TTS → .mp3
+        await generate_audio_elevenlabs(msg["text"], f"audios/message_{i}.mp3")
+
+        # 3. Lip sync → .json
+        await lip_sync_message(i)
+
+        # 4. Base64 encoding for transport
+        msg["audio"] = audio_file_to_base64(f"audios/message_{i}.mp3")
+        msg["lipsync"] = read_json_transcript(f"audios/message_{i}.json")
+
+    return {"messages": messages}
+```
+
+The response contains for each message: the text, audio encoded in Base64, mouthCues, and facial animation parameters.
+
+---
+
+## Deployment: From localhost to Koyeb in Production
+
+At 2am, the project was running locally. We needed to make it accessible to the judges — and ideally keep it online after the night.
+
+### Why Koyeb and Not Heroku/Render
+
+**Koyeb** offers a free tier with a Docker container that's always active (no cold start after 30min of inactivity like with Render Free). For a demo project you want to show at any time, it's perfect.
+
+The deployment: push the image to GitHub Container Registry, Koyeb detects it and restarts automatically.
+
+```bash
+# Build et push
+docker build -t ghcr.io/sylvaincostes/backend-hackathon:latest .
+docker push ghcr.io/sylvaincostes/backend-hackathon:latest
+# Koyeb redéploie automatiquement via webhook
+```
+
+The API is publicly accessible 24/7: `https://musical-darlleen-morrisii-3d1ed0cf.koyeb.app/docs`
+
+### Environment Variables in Production
+
+The `OPENAI_API_KEY` and `ELEVEN_LABS_API_KEY` keys are injected via Koyeb secrets — never in the Docker image.
+
+---
+
+## The 3D Frontend: Three.js + React + Blender
+
+The backend is important, but the visual magic comes from the frontend. The 3D character is a full technical stack in its own right.
+
+### The Avatar: Blender + Mixamo
+
+Jean-Michel's avatar was modeled and rigged by hand in **Blender**, then animations were imported from **Mixamo** (Adobe) — an online library of 3D animations in FBX format.
+
+The workflow:
+1. Character modeling and rigging in Blender
+2. Export mesh to Mixamo to generate animations (walk, gestures, idle...)
+3. Import FBX animations into Blender
+4. Final export to `.glb` with morph targets for lip sync
+
+The face morph targets (mouth positions) are directly mapped to Rhubarb phoneme codes (`A`, `B`, `C`... `X`). The frontend receives the `mouthCues`, and Three.js interpolates the morph targets in real time during audio playback.
+
+### The React UI
+
+The interface is built in React with Tailwind. It handles:
+- Conversation state and message history
+- Audio controls (music / voice volume sliders via shadcn/ui)
+- Camera zoom on the avatar
+- A start overlay (required to unlock the browser's AudioContext — a browser constraint)
+
+```tsx
+const handleStart = () => {
+  // Débloquer l'AudioContext — une interaction utilisateur est requise
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  audioContext.resume()
+  // Jouer un son silencieux pour "chauffer" le contexte
+  const oscillator = audioContext.createOscillator()
+  const gainNode = audioContext.createGain()
+  gainNode.gain.value = 0.001
+  oscillator.connect(gainNode)
+  gainNode.connect(audioContext.destination)
+  oscillator.start()
+  oscillator.stop(audioContext.currentTime + 0.1)
+  startMusic() // Musique de fond de la clairière
+  setStarted(true)
+}
+```
+
+This pattern (silent oscillator) is the only reliable way to unlock the AudioContext on iOS and most modern browsers.
+
+---
+
+## What I Would Have Done Differently
+
+### LLM Response Streaming
+
+We waited for GPT-4o-mini to generate the **complete response** before launching TTS. With streaming, you can pipe tokens to ElevenLabs as soon as the first sentences arrive — perceived latency divided by ~3.
+
+### Audio Cache on the Server Side
+
+Every ElevenLabs call for the same text regenerates a new file. A simple cache based on the text's MD5 hash would avoid redundant calls and reduce latency for recurring greetings.
+
+### More Varied Mixamo Animations
+
+We used Mixamo animations as-is. With more time, we would have blended between multiple idle animations to avoid the repetitive effect.
+
+---
+
+## The Numbers
+
+| Metric | Value |
+|---|---|
+| Total dev time | ~10 hours |
+| Docker services | 1 |
+| Backend lines of code | ~600 |
+| Ranking | 3rd / 267 teams |
+| First public URL generated | 4:12 AM |
+| Services deployed | 1 (single container Koyeb) |
+
+---
+
+## Conclusion
+
+This hackathon confirmed to me that **DevOps isn't a phase of the project — it's the starting point**. The decision to containerize everything at 9:30 PM is what allowed us to deliver a working demo at 7am without chasing missing dependencies.
+
+The "brilliant" code (Three.js, lip sync, bot personality) would have been worthless if we hadn't been able to deploy it reliably. The judges saw a demo that runs. Not a screenshot.
+
+The backend source code is available on GitHub: [SylvainCostes/backend-hackathon](https://github.com/SylvainCostes/backend-hackathon).
+
+The API is live: [musical-darlleen-morrisii-3d1ed0cf.koyeb.app/docs](https://musical-darlleen-morrisii-3d1ed0cf.koyeb.app/docs).

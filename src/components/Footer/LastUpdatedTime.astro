@@ -11,7 +11,7 @@ const response = await client.api.github['repo-info'][':owner'][
 ].$get({
   param: {
     owner: 'sylvaincostes',
-    repository: 'portofoliops'
+    repository: 'test1'
   }
 })
 const data = response?.status === 200 ? await response.json() : null
@@ -28,7 +28,7 @@ const { class: className } = Astro.props
 {
   data ? (
     <p class:list={['text-xs min-[961px]:self-end', className]}>
-      Last updated by Sylvain <br class='xs:hidden' /> on {formattedDate} UTC+7
+      Last updated by Sylvain <br class='xs:hidden' /> on {formattedDate}
     </p>
   ) : (
     // TODO: handle error

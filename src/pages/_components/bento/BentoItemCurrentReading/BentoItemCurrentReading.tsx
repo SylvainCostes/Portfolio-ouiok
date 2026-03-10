@@ -28,7 +28,7 @@ const BentoItemCurrentReading = ({ initialData }: Props) => {
             href={data?.bookUrl}
             target='_blank'
             className={cn(
-                'group relative flex h-full flex-col gap-y-4 rounded-3xl p-5',
+                'group relative flex h-full flex-col gap-y-4 overflow-hidden rounded-3xl p-5',
                 'max-lg:p-6'
             )}
         >
@@ -47,7 +47,7 @@ const BentoItemCurrentReading = ({ initialData }: Props) => {
                     <img
                         src={data?.coverUrl}
                         alt={data?.title}
-                        className='h-full w-full object-cover'
+                        className='absolute inset-0 h-full w-full object-cover'
                     />
                 </div>
 

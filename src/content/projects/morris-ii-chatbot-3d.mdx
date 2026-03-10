@@ -1,0 +1,70 @@
+---
+year: 2025
+title: "Morris II — 3rd Place National Hackathon (3D AI Chatbot)"
+htmlTitle: "Morris II — 3D AI Chatbot\n🥉 3rd Place National"
+description: "3rd place out of 267 teams at Nuit de L'Info 2025. A 3D vocal chatbot with real-time lip sync built in 10 hours with FastAPI, Docker, Three.js, OpenAI, and ElevenLabs."
+heroImage: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - FastAPI
+  - Docker
+  - Three.js
+  - Rhubarb Lipsync
+  - OpenAI
+  - ElevenLabs
+  - LLM
+  - Blender
+  - Hackathon
+links:
+  - name: 'Full Write-up'
+    icon: 'Web'
+    url: '/blog/chatbot-3d-hackathon-viveris'
+---
+
+## Result
+
+🥉 **3rd place — Viveris Challenge**  
+🏆 **Nuit de L'Info 2025** — National French Hackathon  
+📊 267 teams competing simultaneously, ~1000 participants
+
+---
+
+## The Challenge
+
+Viveris' challenge: build an innovative conversational agent with an original interface in **10 hours** (sunset to sunrise).
+
+Our answer: **Jean-Michel Apeupréx** — the Resistant Digital Druid, a deliberately absurd Gaulish character who advises villagers on resisting "Big Tech", incarnated in a 3D animated character with synchronized lip movements.
+
+---
+
+## What Made It Work
+
+The secret wasn't the code — it was **containerizing everything at 9:30 PM** before writing a single line of business logic.
+
+4 Docker services. 1 `docker-compose up`. Everyone on the same environment in 60 seconds.
+
+```
+[Input text] → [OpenAI GPT-4o-mini] → [ElevenLabs TTS] → [Rhubarb Lip Sync] → [Three.js]
+```
+
+**Read the full infrastructure write-up** → [chatbot-3d-hackathon-viveris](/blog/chatbot-3d-hackathon-viveris)
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Role |
+|---|---|---|
+| API | FastAPI (Python) | WebSocket server + orchestration |
+| LLM | OpenAI (GPT-4o-mini) | Cloud inference, structured JSON output |
+| TTS | ElevenLabs | High-quality French text-to-speech |
+| Lip Sync | Rhubarb Lipsync | WAV → mouth cue JSON |
+| 3D | Three.js + Blender | Character rendering + morphTargets |
+| Deploy | Koyeb | Always-on container, no cold starts |
+
+---
+
+## Team Name Reference
+
+The team was named **Morris II** after the [Morris Worm 2](https://arxiv.org/abs/2403.02817) paper — a nod to the cybersecurity culture within the team.

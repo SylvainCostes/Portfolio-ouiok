@@ -44,10 +44,6 @@
 ::view-transition-group(about) {
   z-index: 10;
 }
-::view-transition-group(bookmarks) {
-  z-index: 10;
-}
-
 @media (max-width: 480px) {
   .nav {
     --bottom-nav-bar-offset: 16px;
@@ -161,7 +157,7 @@ body.disable-scroll .tip {
   }
 }
 
-:root:has(nav li:nth-of-type(6):is(:hover)) {
+:root:has(nav li:nth-of-type(7):is(:hover)) {
   --active: 6;
 
   .tip__track div:nth-of-type(6) {

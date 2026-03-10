@@ -1,0 +1,251 @@
+---
+year: 2024
+title: 'GreenTrip — Eco-Responsible Travel Platform'
+htmlTitle: 'GreenTrip —\nEco-Responsible Travel'
+description: 'Full-stack travel platform (Java 21/Spring Boot, PostgreSQL, Docker) with a CI/CD pipeline enforcing SonarCloud quality gates. Co-founded as a startup project.'
+heroImage: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'innovation'
+tags:
+  - Java 21
+  - Spring Boot
+  - Gradle
+  - PostgreSQL
+  - Docker Compose
+  - GitHub Actions
+  - SonarCloud
+  - REST API
+links:
+  - name: 'GitHub'
+    icon: 'Github'
+    url: 'https://github.com/sylvaincostes/greentrip'
+---
+
+## Context
+
+GreenTrip was born from a Master's program startup project: build and ship a real product, not just a prototype. The concept — an eco-responsible travel platform that highlights low-carbon transport options and calculates CO₂ impact per journey.
+
+My role covered the full stack: Spring Boot API, database architecture, and — crucially — the entire DevOps infrastructure. A co-founder handled the frontend.
+
+---
+
+## Architecture
+
+```
+Frontend (React)
+      │
+      │ REST / JSON
+      ▼
+┌──────────────────────────────────────────────┐
+│       Spring Boot 3 Application              │
+│  Controllers → Services → Repositories       │
+│                                              │
+│  ┌──────────────┐  ┌────────────────────┐   │
+│  │  Route Engine │  │  Carbon Calculator  │  │
+│  │ (CO₂/km per  │  │  (ADEME emission    │  │
+│  │  transport)  │  │   factors)          │  │
+│  └──────────────┘  └────────────────────┘   │
+└─────────────────────┬────────────────────────┘
+                      │ JPA / Hibernate
+                      ▼
+                 PostgreSQL 16
+              (Docker Compose)
+```
+
+---
+
+## The Carbon Calculator
+
+The core feature: computing CO₂ emissions per route segment using ADEME (French Agency for Ecological Transition) official emission factors.
+
+```java
+// CarbonCalculatorService.java
+@Service
+public class CarbonCalculatorService {
+
+    // ADEME 2024 emission factors (kg CO₂ eq. per passenger-km)
+    private static final Map<TransportMode, Double> EMISSION_FACTORS = Map.of(
+        TransportMode.PLANE_SHORT_HAUL,  0.230,
+        TransportMode.PLANE_LONG_HAUL,   0.195,
+        TransportMode.HIGH_SPEED_TRAIN,  0.00187,  // TGV
+        TransportMode.REGIONAL_TRAIN,    0.00886,
+        TransportMode.BUS_INTERCITY,     0.0296,
+        TransportMode.ELECTRIC_CAR,      0.0193,
+        TransportMode.THERMAL_CAR,       0.1920,
+        TransportMode.FERRY,             0.1960
+    );
+
+    public RouteEmissions calculate(RouteRequest request) {
+        List<SegmentEmission> segments = request.segments().stream()
+            .map(segment -> {
+                double factor = EMISSION_FACTORS.getOrDefault(
+                    segment.mode(), Double.MAX_VALUE
+                );
+                double distanceKm = haversineDistance(
+                    segment.origin(), segment.destination()
+                );
+                double co2Kg = factor * distanceKm;
+
+                return new SegmentEmission(segment, distanceKm, co2Kg);
+            })
+            .toList();
+
+        double totalCo2 = segments.stream()
+            .mapToDouble(SegmentEmission::co2Kg)
+            .sum();
+
+        // Reference: Paris → New York by plane = ~1100 kg CO₂
+        double planeEquivalent = totalCo2 / EMISSION_FACTORS.get(
+            TransportMode.PLANE_LONG_HAUL
+        );
+
+        return new RouteEmissions(segments, totalCo2, planeEquivalent);
+    }
+
+    // Haversine formula — great-circle distance between two lat/lng points
+    private double haversineDistance(Coordinates a, Coordinates b) {
+        double R = 6371.0; // Earth radius km
+        double dLat = Math.toRadians(b.lat() - a.lat());
+        double dLon = Math.toRadians(b.lon() - a.lon());
+        double sinLat = Math.sin(dLat / 2);
+        double sinLon = Math.sin(dLon / 2);
+        double chord = sinLat * sinLat
+            + Math.cos(Math.toRadians(a.lat()))
+            * Math.cos(Math.toRadians(b.lat()))
+            * sinLon * sinLon;
+        return 2 * R * Math.asin(Math.sqrt(chord));
+    }
+}
+```
+
+---
+
+## CI/CD Pipeline with Quality Gates
+
+The defining DevOps aspect of this project: **you cannot merge to main without passing a SonarCloud quality gate.**
+
+```yaml
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-analyze:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: greentrip_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SonarCloud needs full history for blame analysis
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build & Test
+        run: ./gradlew build jacocoTestReport
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/greentrip_test
+          SPRING_DATASOURCE_USERNAME: test
+          SPRING_DATASOURCE_PASSWORD: test
+
+      - name: SonarCloud Analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=greentrip
+            -Dsonar.organization=sylvaincostes
+            -Dsonar.java.coveragePlugin=jacoco
+            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
+            -Dsonar.qualitygate.wait=true  # BLOCKS if quality gate fails
+
+  deploy:
+    needs: build-and-analyze
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/greentrip
+            git pull origin main
+            docker compose up -d --build
+```
+
+SonarCloud quality gate conditions enforced:
+- Code coverage ≥ 80%
+- 0 new Critical/Blocker issues
+- Duplicated lines < 3%
+- Maintainability rating ≥ A
+
+---
+
+## Docker Compose Stack
+
+```yaml
+# docker-compose.yml
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/greentrip
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate  # Never auto-migrate in prod
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: greentrip
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+---
+
+## Key Learnings
+
+This was my first project where I owned the full DevOps chain of a real product, not just academic code. The key lesson: **CI/CD without quality gates is just automation — it's quality gates that make it a software delivery system.** The SonarCloud block-on-failure policy forced us to write tests before merging, not as an afterthought.

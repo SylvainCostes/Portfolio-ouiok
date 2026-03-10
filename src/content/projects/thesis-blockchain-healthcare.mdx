@@ -1,0 +1,123 @@
+---
+year: 2025
+title: 'M1 Thesis — Blockchain Consensus for Healthcare Data Security'
+htmlTitle: 'M1 Thesis — Blockchain\nfor Healthcare Security'
+description: 'Grade 18/20. A Dev-Sec-Law-Ops pipeline combining BFT consensus, ZK-Proofs, and IPFS to ensure GDPR/HIPAA compliance by design for Electronic Health Records.'
+heroImage: 'https://images.unsplash.com/photo-1639762681057-408e52192e55?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+type: 'thesis'
+company: 'Université Paris Nanterre — M1 MIAGE'
+role: 'Research Thesis'
+period: '2025'
+tags:
+  - Blockchain
+  - BFT / PBFT
+  - ZK-Proofs
+  - IPFS
+  - GDPR / HIPAA
+  - SLR
+  - Healthcare
+  - Research
+---
+
+## Academic Context
+
+**Master 1 MIAGE — Université Paris Nanterre**  
+Faculty supervisor: **Prof. Marta Rukoz**, Full Professor  
+Master's director: **Prof. François Delbot**, Senior Lecturer  
+Industry supervisor: **M. Rémi Masson**, Manager — Audioptic Trade Services (Optic 2000)  
+Defended on **12 June 2025** · Grade: **18 / 20**
+
+---
+
+## Research Question
+
+The digitisation of healthcare systems generates an unprecedented volume of sensitive medical data. These data must simultaneously satisfy three conflicting requirements:
+
+- **Availability**: a physician must be able to access a patient record urgently, from any facility
+- **Confidentiality**: health data are among the most sensitive under the GDPR (and HIPAA in the United States)
+- **Auditability**: every access must be recorded and provable for regulatory compliance
+
+Traditional centralised systems cannot satisfy all three properties without introducing a single point of failure or trust. The blockchain — a distributed, immutable ledger — appears as a promising avenue, provided the right consensus protocols are chosen and appropriate cryptographic mechanisms are added.
+
+---
+
+## Method — Systematic Literature Review (SLR)
+
+This thesis is a **Systematic Literature Review (SLR)** conducted following the PICOC methodology over the 2022–2025 period. The final corpus comprises **28 peer-reviewed articles** from sources including IEEE Xplore, ACM Digital Library, and PubMed.
+
+**Research Questions:**
+
+| ID | Question |
+|---|---|
+| RQ1 | Which consensus mechanisms are used in blockchain solutions to secure EHRs? |
+| RQ2 | What technical and regulatory challenges arise when integrating blockchain into EHR systems? |
+
+---
+
+## Main Consensus Mechanisms Studied
+
+The corpus analysis distinguishes five consensus families, each presenting distinct trade-offs:
+
+**Proof-of-Work (PoW)** — well-known and robust, but energy consumption exceeds that of PBFT by two orders of magnitude in a comparable permissioned network. Unsuitable for healthcare.
+
+**Proof-of-Stake (PoS)** — more energy-efficient, but security rests on staked capital, which is not relevant in a hospital consortium network without a native economic token.
+
+**PBFT and BFT variants** — deterministic Byzantine fault tolerance, immediate finality (no forks), low energy consumption. The network tolerates up to *f* malicious nodes if *n ≥ 3f + 1*. Particularly suited to healthcare consortia where participants are known and registered. Throughput can vary by up to three-fold depending on the BFT variant.
+
+**Raft** — classical non-BFT consensus, tolerating crashes in honest nodes but not Byzantine behaviour. Useful in tightly controlled closed environments.
+
+**Proof-of-Authority (PoA)** — each validator is identified by a certificate (X.509). Simple, performant, suited to permissioned environments where identity is audited.
+
+**RQ1 Conclusion**: in a permissioned healthcare network, **BFT and PoA algorithms** offer the best balance of security, performance, and energy efficiency.
+
+---
+
+## Technical & Regulatory Challenges
+
+### Immutability ↔ Right to Erasure (GDPR)
+
+The immutable nature of blocks directly conflicts with Article 17 of the GDPR (right to erasure). Two solutions emerge from the corpus:
+
+- **Chameleon hashes**: hash functions allowing controlled rewriting of a block by a designated authority (e.g., the patient), without invalidating the chain
+- **Off-chain storage**: raw medical data (imaging, reports) is encrypted and stored on IPFS or a secure cloud; only the content hash (CID) is anchored on-chain. Deleting the off-chain data satisfies the right to erasure without modifying the blockchain
+
+### Zero-Knowledge Proofs (ZKP)
+
+ZK-Proofs allow **proving compliance with a constraint without revealing the underlying data** — for example: proving a patient gave consent for access on a given date, without revealing their identity or the accessed data. This addresses both GDPR confidentiality requirements and regulatory auditability.
+
+### Governance and Compliance by Design
+
+The corpus highlights the need for a **"compliance-by-design"** approach (which we conceptualise as **Dev-Sec-Law-Ops**): integrating technical, legal, and clinical experts from the design phase, rather than treating compliance as a layer added after the fact. This entails:
+
+- Traceability and auditability embedded in the protocol
+- Clear access-rights governance (consent smart contracts)
+- Cryptographically provable access revocation
+
+---
+
+## Recommendations and Perspectives
+
+The thesis concludes with recommendations for the transition to industrial prototypes:
+
+1. Prefer **PBFT or PoA** for hospital consortium networks
+2. Adopt a **hybrid architecture**: on-chain smart contracts + encrypted IPFS off-chain storage
+3. Integrate **ZKP** for consent and access proofs
+4. Plan for **chameleon hashes** from the design phase to handle the GDPR right to erasure
+5. Conduct **external audits and real-environment tests** before any large-scale deployment
+6. Involve lawyers, clinicians, and engineers from the scoping phase
+
+---
+
+## Summary
+
+| Element | Detail |
+|---|---|
+| Type | Systematic Literature Review (SLR) |
+| Corpus | 28 peer-reviewed articles, 2022–2025 |
+| Recommended Consensus | BFT / PoA (permissioned networks) |
+| GDPR Compliance | Chameleon hashes + off-chain IPFS storage |
+| Confidentiality | Zero-Knowledge Proofs (ZKP) |
+| Original Concept | Dev-Sec-Law-Ops (compliance-by-design) |
+| Grade | **18 / 20** |

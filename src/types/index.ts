@@ -19,7 +19,7 @@ export interface GithubRepositoryLastUpdated {
   updatedAt: string
 }
 
-export type MonkeyTypeLanguage = 'indonesian' | 'english'
+export type MonkeyTypeLanguage = 'french' | 'english'
 
 export interface MonkeyTypeData {
   acc: number

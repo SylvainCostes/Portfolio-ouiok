@@ -1,0 +1,208 @@
+---
+year: 2024
+title: 'Cloud & GenAI Platform at Optic 2000'
+htmlTitle: 'Cloud & GenAI Platform\nat Optic 2000'
+description: 'Full-Stack Serverless architecture on AWS with a production LLM chatbot (Amazon Bedrock/Claude) that measurably reduced support call volume.'
+heroImage: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+type: 'experience'
+company: 'Audioptic Trade Services (Optic 2000)'
+role: 'Full-Stack Developer · Alternance'
+period: '2023 – 2024'
+tags:
+  - AWS Lambda
+  - Amazon Bedrock
+  - Claude
+  - Java / Spring Boot
+  - React / Redux
+  - Serverless
+  - Cypress
+  - Agile Scrum
+  - LLM
+---
+
+## Context
+
+During my alternance at **Audioptic Trade Services (ATS)**, the technology subsidiary of the Optic 2000 group, I worked within the Digital Factory team on two major pillars: building Serverless B2B applications for opticians and prototyping an AI chatbot that went into production.
+
+The group operates 1,400+ optical stores across France. The Digital Factory team's challenge was to deliver scalable internal tooling without a dedicated ops team — hence the bet on AWS Serverless.
+
+---
+
+## LLM Chatbot — Atsia
+
+The flagship project: **Atsia**, a production chatbot built on **Amazon Bedrock** (Anthropic Claude model) to assist opticians with frequently asked operational questions — reducing inbound support calls to the ATS helpdesk.
+
+### Architecture
+
+```
+Optician (browser)
+       │
+       │ HTTPS
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│               AWS API Gateway (REST)                     │
+└─────────────────────────┬────────────────────────────────┘
+                          │ Lambda proxy integration
+                          ▼
+┌──────────────────────────────────────────────────────────┐
+│               AWS Lambda (Java / Spring Boot)            │
+│  - Prompt engineering + context injection                │
+│  - Conversation history management (DynamoDB)            │
+│  - Bedrock InvokeModel call                              │
+└──────┬──────────────────┬───────────────────────────────┘
+       │                  │
+       ▼                  ▼
+Amazon Bedrock       DynamoDB
+(Claude Sonnet)      (session history)
+```
+
+### Bedrock Integration (Java)
+
+```java
+// BedrockService.java
+@Service
+public class BedrockService {
+
+    private final BedrockRuntimeClient bedrockClient;
+    private final PromptBuilder promptBuilder;
+
+    public ChatResponse invoke(ChatRequest request, List<Message> history) {
+        String prompt = promptBuilder.buildWithContext(request.message(), history);
+
+        InvokeModelRequest invokeRequest = InvokeModelRequest.builder()
+            .modelId("anthropic.claude-3-sonnet-20240229-v1:0")
+            .body(SdkBytes.fromUtf8String(buildAnthropicPayload(prompt)))
+            .contentType("application/json")
+            .build();
+
+        InvokeModelResponse response = bedrockClient.invokeModel(invokeRequest);
+        return parseClaudeResponse(response.body().asUtf8String());
+    }
+
+    private String buildAnthropicPayload(String prompt) {
+        return """
+            {
+              "anthropic_version": "bedrock-2023-05-31",
+              "max_tokens": 1024,
+              "system": "%s",
+              "messages": [{"role": "user", "content": "%s"}]
+            }
+            """.formatted(SYSTEM_PROMPT, escapeJson(prompt));
+    }
+}
+```
+
+### Prompt Engineering — System Prompt
+
+The system prompt is the core of Atsia's quality. It was iteratively refined with the support team to ground the model in ATS-specific knowledge:
+
+```
+You are Atsia, the AI assistant for ATS (Audioptic Trade Services), 
+the digital subsidiary of the Optic 2000 group.
+
+Your role is to assist opticians with operational questions about:
+- The B2B platform (orders, invoicing, stock)
+- Product catalog and commercial conditions
+- Technical issues with the portal
+
+Rules:
+- Always respond in French
+- If you are not confident (< 80% certainty), say so explicitly and 
+  redirect to the support hotline: 01 XX XX XX XX
+- NEVER invent product references or prices
+- Keep answers under 150 words unless a technical procedure requires more
+```
+
+---
+
+## Serverless Full-Stack Applications
+
+In parallel, I built and maintained B2B applications for the optician network:
+
+### AWS Architecture Pattern
+
+```
+React/Redux SPA (S3 + CloudFront)
+         │
+         │ API calls
+         ▼
+API Gateway → Lambda (Java/Spring Boot) → RDS (MySQL) / S3
+                                        → QuickSight (BI dashboards)
+```
+
+### Lambda Cold Start Optimization
+
+A key challenge with Java Lambdas is cold start latency. Solution: **Provisioned Concurrency** + Spring Boot optimization:
+
+```java
+// LambdaHandler.java — SnapStart-aware initialization
+@SpringBootApplication
+public class LambdaApplication implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    // Static initialization happens during SnapStart snapshot
+    private static final ApplicationContext context =
+        SpringApplication.run(LambdaApplication.class);
+
+    @Override
+    public APIGatewayProxyResponseEvent handleRequest(
+            APIGatewayProxyRequestEvent event, Context ctx) {
+        HttpHandler handler = AwsProxyHandlerBuilder
+            .httpApiV2ProxyBuilder()
+            .defaultProxy()
+            .buildAndInitialize();
+        // ...
+    }
+}
+```
+
+Using **AWS Lambda SnapStart** reduced cold start from ~3s to ~200ms for Java 21 runtimes.
+
+---
+
+## Quality — Cypress E2E Tests
+
+```javascript
+// cypress/e2e/chatbot.cy.js
+describe('Atsia Chatbot', () => {
+  beforeEach(() => {
+    cy.loginAsOptician()
+    cy.visit('/chatbot')
+  })
+
+  it('responds to a stock inquiry', () => {
+    cy.get('[data-testid="chat-input"]')
+      .type('Comment consulter mon stock disponible ?')
+
+    cy.get('[data-testid="send-button"]').click()
+
+    cy.get('[data-testid="bot-message"]', { timeout: 10000 })
+      .should('be.visible')
+      .and('contain.text', 'stock')
+
+    // Ensure no hallucinated product references
+    cy.get('[data-testid="bot-message"]')
+      .invoke('text')
+      .should('not.match', /REF-\d{6}/)
+  })
+})
+```
+
+---
+
+## Highlights at AWS Summit Paris 2025
+
+The team's work on Atsia was showcased internally at the **AWS Summit Paris 2025**. We benchmarked our architecture against approaches from Orange Bank (Ippon Technologies) and Veolia (12+ LLM models, 250+ knowledge bases, 60,000 users) — validating our technical choices and identifying scaling roadmap priorities.
+
+---
+
+## Impact
+
+| Metric | Value |
+|---|---|
+| Chatbot in production | ✅ (since Q2 2025) |
+| Support calls reduction | Measurable decrease (internal KPI) |
+| AWS services used | Lambda, Bedrock, API Gateway, S3, DynamoDB, QuickSight |
+| Test coverage (E2E) | Cypress automated suite |
+| Duration | 16 months alternance |

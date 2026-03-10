@@ -1,0 +1,213 @@
+---
+year: 2023
+title: 'Mini-Shell — A Unix Shell Built from Scratch in C'
+htmlTitle: 'Mini-Shell — Unix Shell\nfrom Scratch in C'
+description: 'A functional Unix shell implementing fork/exec, pipes, redirections, signal handling, and job control — directly on Linux kernel primitives.'
+heroImage: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'security'
+tags:
+  - C
+  - Linux
+  - Systems Programming
+  - POSIX
+  - Process Management
+  - Signal Handling
+  - Pipes
+---
+
+## Why Build a Shell?
+
+A shell is the thinnest possible layer between user intent and the Linux kernel. Building one forces you to understand what `bash` does thousands of times per day transparently: parsing input, forking processes, managing file descriptors, and handling signals.
+
+This project was part of my **Licence 3 Computer Science** coursework, but I extended it well beyond the assignment scope to understand job control and background processes.
+
+---
+
+## Feature Set
+
+| Feature | Status | Notes |
+|---|---|---|
+| Command execution | ✅ | `execvp` with PATH resolution |
+| Arguments parsing | ✅ | Quoted strings, special chars |
+| Pipes (`\|`) | ✅ | Arbitrary depth (`cmd1 \| cmd2 \| cmd3`) |
+| Input redirect (`<`) | ✅ | `open()` + `dup2()` |
+| Output redirect (`>`, `>>`) | ✅ | Truncate and append modes |
+| Background jobs (`&`) | ✅ | `SIGCHLD` tracking |
+| Signal handling | ✅ | `Ctrl+C`, `Ctrl+Z`, `Ctrl+\` |
+| Built-ins | ✅ | `cd`, `exit`, `jobs`, `fg`, `bg`, `history` |
+| Command history | ✅ | Circular buffer, readline-style |
+
+---
+
+## Core Implementation
+
+### Parser
+
+The first challenge is parsing the command line correctly — handling quotes, escape characters, and special tokens:
+
+```c
+// parser.c
+typedef enum {
+    TOKEN_WORD,
+    TOKEN_PIPE,
+    TOKEN_REDIRECT_IN,
+    TOKEN_REDIRECT_OUT,
+    TOKEN_REDIRECT_APPEND,
+    TOKEN_BACKGROUND,
+    TOKEN_EOF
+} token_type_t;
+
+token_t *tokenize(const char *input) {
+    token_t *tokens = calloc(MAX_TOKENS, sizeof(token_t));
+    int ti = 0;
+    const char *p = input;
+
+    while (*p) {
+        // Skip whitespace
+        while (*p == ' ' || *p == '\t') p++;
+        if (!*p) break;
+
+        switch (*p) {
+            case '|': tokens[ti++] = (token_t){TOKEN_PIPE,    NULL}; p++; break;
+            case '<': tokens[ti++] = (token_t){TOKEN_REDIRECT_IN,  NULL}; p++; break;
+            case '>':
+                if (*(p+1) == '>') {
+                    tokens[ti++] = (token_t){TOKEN_REDIRECT_APPEND, NULL}; p += 2;
+                } else {
+                    tokens[ti++] = (token_t){TOKEN_REDIRECT_OUT, NULL}; p++;
+                }
+                break;
+            case '&': tokens[ti++] = (token_t){TOKEN_BACKGROUND, NULL}; p++; break;
+            case '"': {
+                // Quoted string
+                const char *start = ++p;
+                while (*p && *p != '"') p++;
+                tokens[ti++] = (token_t){TOKEN_WORD, strndup(start, p - start)};
+                if (*p) p++;
+                break;
+            }
+            default: {
+                const char *start = p;
+                while (*p && !strchr(" \t|<>&\"", *p)) p++;
+                tokens[ti++] = (token_t){TOKEN_WORD, strndup(start, p - start)};
+            }
+        }
+    }
+    tokens[ti] = (token_t){TOKEN_EOF, NULL};
+    return tokens;
+}
+```
+
+---
+
+### Pipe Chain Execution
+
+This is the hardest part: building a pipeline of N commands where each command is a child process, with file descriptors connected left-to-right.
+
+```c
+// executor.c
+void execute_pipeline(command_t *cmds, int n_cmds) {
+    int pipefds[2 * (n_cmds - 1)];
+
+    // Create all pipes upfront
+    for (int i = 0; i < n_cmds - 1; i++) {
+        if (pipe(pipefds + i * 2) < 0) {
+            perror("pipe");
+            return;
+        }
+    }
+
+    for (int i = 0; i < n_cmds; i++) {
+        pid_t pid = fork();
+        if (pid < 0) { perror("fork"); return; }
+
+        if (pid == 0) {
+            // Child: wire up file descriptors
+
+            // Read from previous pipe (not for first command)
+            if (i > 0) {
+                dup2(pipefds[(i-1) * 2], STDIN_FILENO);
+            }
+
+            // Write to next pipe (not for last command)
+            if (i < n_cmds - 1) {
+                dup2(pipefds[i * 2 + 1], STDOUT_FILENO);
+            }
+
+            // Close ALL pipe FDs — critical to avoid hanging
+            for (int j = 0; j < 2 * (n_cmds - 1); j++) {
+                close(pipefds[j]);
+            }
+
+            // Handle input/output redirections
+            apply_redirections(&cmds[i]);
+
+            // Execute
+            execvp(cmds[i].argv[0], cmds[i].argv);
+            perror(cmds[i].argv[0]);
+            _exit(127);
+        }
+    }
+
+    // Parent: close all pipe FDs and wait
+    for (int j = 0; j < 2 * (n_cmds - 1); j++) close(pipefds[j]);
+    for (int i = 0; i < n_cmds; i++) wait(NULL);
+}
+```
+
+**Key insight**: The most common mistake is forgetting to close ALL pipe file descriptors in EVERY child process. If any child inherits an open write-end of a pipe, the reader will never get EOF and will hang forever. This drives home why file descriptor management is critical — the exact same problem occurs in production systems with open database connections.
+
+---
+
+### Signal Handling & Job Control
+
+```c
+// signals.c
+volatile sig_atomic_t pending_sigchld = 0;
+
+void sigchld_handler(int sig) {
+    (void)sig;
+    pid_t pid;
+    int status;
+
+    // Reap all finished children without blocking
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
+        job_t *job = find_job_by_pid(pid);
+        if (!job) continue;
+
+        if (WIFSTOPPED(status)) {
+            job->status = JOB_STOPPED;
+            printf("\n[%d]+ Stopped\t%s\n", job->id, job->cmdline);
+        } else if (WIFEXITED(status) || WIFSIGNALED(status)) {
+            job->status = JOB_DONE;
+        }
+    }
+    pending_sigchld = 1;
+}
+
+void setup_signals(void) {
+    struct sigaction sa = {0};
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
+    // Shell ignores Ctrl+C (foreground child will receive it)
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
+
+    // Track child state changes
+    sa.sa_handler = sigchld_handler;
+    sa.sa_flags |= SA_NOCLDSTOP;
+    sigaction(SIGCHLD, &sa, NULL);
+}
+```
+
+---
+
+## Key Takeaways
+
+Building this shell crystalized concepts that matter deeply in platform engineering:
+- **File descriptors are resources** — every `dup2()` and `close()` is deliberate. The same discipline applies to network sockets, database connections, and container port mappings.
+- **`fork()` is the foundation** — every Docker container, every Kubernetes pod, every Lambda invocation ultimately calls `clone()` (Linux's `fork()` variant).
+- **Signal hygiene** — Understanding `SIGTERM`, `SIGKILL`, and `SIGCHLD` behavior is essential when debugging why Kubernetes pods don't shut down cleanly (they're usually missing proper signal handlers in PID 1).

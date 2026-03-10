@@ -1,0 +1,96 @@
+---
+year: 2025
+title: 'Payment Infrastructure Platform at SG CIB'
+htmlTitle: 'Payment Infrastructure\nPlatform at SG CIB'
+description: 'GitOps-driven CI/CD platform supporting SEPA and Cross-Border payment systems for 100+ engineers across France and India.'
+heroImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2832&auto=format&fit=crop'
+heroImageAlign: 'center'
+universe: 'platform'
+type: 'experience'
+company: 'Société Générale CIB'
+role: 'Platform Engineer · Alternance'
+period: '2024 – 2025'
+tags:
+  - Kubernetes / AKS
+  - ArgoCD
+  - Helm
+  - Terraform
+  - GitHub Actions
+  - Harbor
+  - GitOps
+  - RabbitMQ
+  - C# / .NET
+  - Filebeat
+---
+
+## Context
+
+Within Société Générale CIB's **Global Banking Technology & Operations** department (Financing and Transaction Banking — Payment Definition), I designed and maintained the platform infrastructure underpinning critical fund-transfer and collections systems — covering European payments (SEPA: SCT, SDD) and International transactions (Cross-Border / XCT).
+
+These are **Tier-1 financial systems**. Downtime is not an option, and a misconfigured deployment can have a direct impact on real transactions. The platform served a distributed engineering community of roughly 100 collaborators across Paris and India (~40 active daily pipeline users).
+
+---
+
+## CI/CD Pipeline — From Jenkins to GitHub Actions
+
+When I joined, the team was running **Jenkins** for CI. One of the first major initiatives was migrating to **GitHub Actions**, which allowed us to co-locate pipeline definitions with the application code, reduce toil around pipeline maintenance, and unify the developer experience across all services.
+
+The Docker images produced by CI are pushed to **Harbor**, a self-hosted OCI-compliant registry. Harbor provides image scanning, access control per project, and retention policies — critical requirements for financial-grade infrastructure where you need full traceability of every artefact going to production.
+
+The CI pipeline covers: linting, unit tests, Docker image build, push to Harbor, and finally an automated image-tag update in the GitOps repository — which triggers the CD side.
+
+---
+
+## Application Stack
+
+The majority of backend services are written in **C# / .NET**, exposed as microservices and communicating asynchronously via **RabbitMQ**. Python is used for operational scripts, data migration tooling, and automation tasks around the platform.
+
+Each service ships with a **Dockerfile** maintained by the team. Standardizing those Dockerfiles (base image versions, multi-stage builds, non-root users) was part of the platform hardening effort.
+
+**Filebeat** runs as a sidecar in each pod, collecting structured application logs and shipping them to the centralized Elasticsearch / Kibana stack. This keeps observability concerns out of the application code while providing full log traceability across hundreds of containers.
+
+---
+
+## Vendor Integration — FIS & TCS
+
+Two proprietary payment platforms were integrated into this infrastructure: **FIS** (SEPA payment rails) and **TCS BaNCS** (international XCT flows). These are third-party vendor products that do not natively fit into a containerized GitOps model.
+
+A significant part of the platform work involved building **wrappers and adapters** around these vendors — exposing their functionality through standardized internal APIs and message contracts, so the rest of the platform could interact with them in a consistent way without tight coupling to vendor-specific interfaces.
+
+---
+
+## GitOps with ArgoCD & Multi-Sourcing
+
+The deployment model is **fully GitOps**: no human applies changes directly to the cluster. Every change flows through a pull request, passes CI, and is reconciled by **ArgoCD**, which continuously compares the cluster state to the Git source of truth and self-heals any drift.
+
+We used ArgoCD's **multi-source application** feature to compose deployments from multiple repositories simultaneously — for instance combining our internal application chart with a separately versioned shared-library chart, without duplicating configuration. This was key to supporting ~40 teams deploying services at their own release cadence.
+
+---
+
+## Internal Helm Chart
+
+The team maintains an **internal Helm chart** shared across all payment services. It encodes the organisation's defaults: resource limits, Filebeat sidecar injection, RabbitMQ connection configuration, readiness/liveness probe patterns, and network policies. Teams consume this chart by pinning a specific chart version in their ArgoCD application manifest and overlaying only what differs for their service.
+
+This chart-as-platform-contract model drastically reduced configuration drift across dozens of microservices and gave us a single place to apply security patches or observability improvements fleet-wide.
+
+---
+
+## Infrastructure as Code — Terraform
+
+The AKS cluster, Azure networking, Key Vault, Harbor registry, and supporting Azure resources are all managed through **Terraform**. This includes the migration scripts used to move workloads from the legacy on-prem setup onto AKS — allowing a staged, auditable transition with full rollback capability at each step.
+
+State is stored remotely with locking, and changes follow the same pull-request review process as application code. Nothing in Azure is touched outside of Terraform.
+
+---
+
+## Impact
+
+| Metric | Value |
+|---|---|
+| Engineers supported | ~100 (France + India) |
+| Active daily pipeline users | ~40 |
+| Payment systems | SEPA (SCT / SDD) + Cross-Border (XCT) |
+| Vendor integrations | FIS + TCS BaNCS |
+| Environments managed | dev / staging / prod per service |
+| CI migration | Jenkins → GitHub Actions |
+| Image registry | Harbor (self-hosted, scanned) |
