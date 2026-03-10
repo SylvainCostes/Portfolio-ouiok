@@ -7,7 +7,9 @@ interface LastUpdatedTimeData {
 
 const getLastUpdatedTimeByFile = async (
   filePath: string
-): Promise<LastUpdatedTimeData> => {
+): Promise<LastUpdatedTimeData> => {  if (!GITHUB_ACCESS_TOKEN) {
+    throw new Error('GITHUB_ACCESS_TOKEN is not set')
+  }
   const API_URL = `https://api.github.com/repos/sylvaincostes/Portfolio-ouiok/commits?`
 
   const params = new URLSearchParams({

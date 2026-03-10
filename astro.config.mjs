@@ -54,7 +54,8 @@ export default defineConfig({
       }),
       GITHUB_ACCESS_TOKEN: envField.string({
         context: 'server',
-        access: 'secret'
+        access: 'secret',
+        optional: true
       }),
       MONKEYTYPE_API_KEY: envField.string({
         context: 'server',
