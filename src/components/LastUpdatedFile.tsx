@@ -20,7 +20,7 @@ const LastUpdatedFile = ({ filePath, class: className }: Props) => {
 
   return (
     <p className={`!mt-8 text-zinc-500 ${className ?? ''}`}>
-      Last updated on {formatDateByTimeZone(new Date(data.lastUpdatedTime))} UTC+7.
+      Last updated on {formatDateByTimeZone(new Date(data.lastUpdatedTime))}.
       {data.latestCommitUrl && (
         <a
           href={data.latestCommitUrl}
