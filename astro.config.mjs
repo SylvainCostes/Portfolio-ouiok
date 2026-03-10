@@ -6,7 +6,7 @@ import react from '@astrojs/react'
 import sitemap from '@astrojs/sitemap'
 import tailwind from '@astrojs/tailwind'
 import vercel from '@astrojs/vercel'
-import { defineConfig, envField } from 'astro/config'
+import { defineConfig, envField, passthroughImageService } from 'astro/config'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeSlug from 'rehype-slug'
 
@@ -23,7 +23,8 @@ export default defineConfig({
   site: 'https://sylvaincostes.fr',
 
   image: {
-    domains: ['images.unsplash.com', 'res.cloudinary.com', 'plus.unsplash.com']
+    domains: ['images.unsplash.com', 'res.cloudinary.com', 'plus.unsplash.com'],
+    service: passthroughImageService()
   },
 
   i18n: {
@@ -103,13 +104,6 @@ export default defineConfig({
           }
         ]
       ]
-    }),
-    (await import('@playform/compress')).default({
-      HTML: {
-        'html-minifier-terser': {
-          collapseWhitespace: false
-        }
-      }
     }),
     sitemap(),
     react(),
