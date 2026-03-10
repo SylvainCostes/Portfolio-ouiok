@@ -43,6 +43,8 @@ const BentoGithubActivity = (_props: Props) => {
     fetcher(() => client.api.github.contributions.$get())
   )
 
+  const [hoveredTile, setHoveredTile] = React.useState<string | null>(null)
+
   if (error || !data) {
     return (
       <div className='flex h-full items-center justify-center'>
@@ -52,13 +54,12 @@ const BentoGithubActivity = (_props: Props) => {
   }
 
   const defaultValue = `${formatNumber(data.totalContributions)} contributions in the last year`
-  const [hoveredTile, setHoveredTile] = React.useState<string | null>(defaultValue)
 
   return (
     <div className='relative flex h-full flex-col justify-between px-4 pb-5 pt-4 max-md:gap-4'>
       <div className='flex items-baseline justify-between gap-4 max-xs:flex-col'>
         <BentoBadge icon={Github} text='Github activity' />
-        <p className='line-clamp-1 text-sm'>{hoveredTile}</p>
+        <p className='line-clamp-1 text-sm'>{hoveredTile ?? defaultValue}</p>
       </div>
       <div className='w-full overflow-x-scroll'>
         <HeatMap
