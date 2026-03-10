@@ -49,7 +49,18 @@ jobs:
     runs-on: self-hosted
     if: github.repository == 'SylvainCostes/Portfolio-ouiok' && github.ref == 'refs/heads/master'
     steps:
-      - name: Pull latest image and restart container
+      - name: Pull latest image and recreate container
         run: |
           docker pull sylvaincostes/portfolio:latest
-          docker restart portfolio-app
+          docker stop portfolio-app || true
+          docker rm portfolio-app || true
+          docker run -d \
+            --name portfolio-app \
+            --restart unless-stopped \
+            -p 4321:4321 \
+            -e HOST=0.0.0.0 \
+            -e PORT=4321 \
+            -e GITHUB_ACCESS_TOKEN="${{ secrets.GITHUB_ACCESS_TOKEN }}" \
+            -e MAPTILER_API_KEY="${{ secrets.MAPTILER_API_KEY }}" \
+            -e MONKEYTYPE_API_KEY="${{ secrets.MONKEYTYPE_API_KEY }}" \
+            sylvaincostes/portfolio:latest
