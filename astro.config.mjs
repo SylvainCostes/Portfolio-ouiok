@@ -50,7 +50,8 @@ export default defineConfig({
     schema: {
       MAPTILER_API_KEY: envField.string({
         context: 'server',
-        access: 'secret'
+        access: 'secret',
+        optional: true
       }),
       GITHUB_ACCESS_TOKEN: envField.string({
         context: 'server',
@@ -59,7 +60,8 @@ export default defineConfig({
       }),
       MONKEYTYPE_API_KEY: envField.string({
         context: 'server',
-        access: 'secret'
+        access: 'secret',
+        optional: true
       }),
 
       PUBLIC_VERCEL_ENV: envField.string({
