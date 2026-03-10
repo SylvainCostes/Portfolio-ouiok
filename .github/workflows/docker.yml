@@ -47,6 +47,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: self-hosted
+    if: github.repository == 'SylvainCostes/Portfolio-ouiok' && github.ref == 'refs/heads/master'
     steps:
       - name: Pull latest image and restart container
         run: |
