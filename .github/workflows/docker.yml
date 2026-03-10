@@ -60,7 +60,7 @@ jobs:
             -p 4321:4321 \
             -e HOST=0.0.0.0 \
             -e PORT=4321 \
-            -e GITHUB_ACCESS_TOKEN="${{ secrets.GITHUB_ACCESS_TOKEN }}" \
+            -e GH_ACCESS_TOKEN="${{ secrets.GH_ACCESS_TOKEN }}" \
             -e MAPTILER_API_KEY="${{ secrets.MAPTILER_API_KEY }}" \
             -e MONKEYTYPE_API_KEY="${{ secrets.MONKEYTYPE_API_KEY }}" \
             sylvaincostes/portfolio:latest

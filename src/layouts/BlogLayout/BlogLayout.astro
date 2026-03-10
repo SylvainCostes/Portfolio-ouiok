@@ -98,7 +98,7 @@ const {
       ]}
     >
       <slot />
-      <LastUpdatedFile filePath={`blog/${id}.mdx`} client:only='react' />
+      <LastUpdatedFile filePath={`${Astro.url.pathname.startsWith('/fr/') ? 'blog-fr' : 'blog'}/${id}.mdx`} client:only='react' />
     </article>
   </section>
 

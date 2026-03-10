@@ -121,7 +121,7 @@ const htmlTitle = _htmlTitle.replace(
       ]}
     >
       <slot />
-      <LastUpdatedFile filePath={`projects/${slug}.mdx`} client:only='react' />
+      <LastUpdatedFile filePath={`${Astro.url.pathname.startsWith('/fr/') ? 'projects-fr' : 'projects'}/${slug}.mdx`} client:only='react' />
     </article>
 
     <aside class='w-60 shrink-0 space-y-8 max-lg:hidden'>

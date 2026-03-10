@@ -49,7 +49,7 @@ export default defineConfig({
         access: 'secret',
         optional: true
       }),
-      GITHUB_ACCESS_TOKEN: envField.string({
+      GH_ACCESS_TOKEN: envField.string({
         context: 'server',
         access: 'secret',
         optional: true

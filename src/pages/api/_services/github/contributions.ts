@@ -1,4 +1,4 @@
-import { GITHUB_ACCESS_TOKEN } from 'astro:env/server'
+import { GH_ACCESS_TOKEN } from 'astro:env/server'
 import request from 'graphql-request'
 
 import { GetGithubContributions } from '@/lib/graphql'
@@ -10,7 +10,7 @@ const getGithubContributions = async (): Promise<GithubContributionData> => {
     document: GetGithubContributions,
     variables: { userName: 'sylvaincostes' },
     requestHeaders: {
-      Authorization: `Bearer ${GITHUB_ACCESS_TOKEN}`
+      Authorization: `Bearer ${GH_ACCESS_TOKEN}`
     }
   })
 
