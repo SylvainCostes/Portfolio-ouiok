@@ -15,7 +15,7 @@ const adapter = node({ mode: 'standalone' })
 export default defineConfig({
   adapter,
   output: 'static',
-  site: 'https://sylvaincostes.fr',
+  site: 'https://sylvaincostes.com',
 
   image: {
     domains: ['images.unsplash.com', 'res.cloudinary.com', 'plus.unsplash.com'],
