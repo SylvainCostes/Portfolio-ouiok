@@ -16,6 +16,7 @@ const { url, class: className } = Astro.props
 const metadata = await client.api['link-metadata']
   .$get({ query: { url } })
   .then((res) => res.json())
+  .catch(() => ({ success: false as const }))
 
 if (!metadata.success) return
 

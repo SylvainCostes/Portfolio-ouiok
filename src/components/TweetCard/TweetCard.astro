@@ -11,8 +11,8 @@ const { tweetId, class: className, ...restProps } = Astro.props
 
 const response = await client.api['tweet-content'][':id'].$get({
   param: { id: tweetId }
-})
-const data = response.status === 200 ? (await response.json()).tweet : null
+}).catch(() => null)
+const data = response?.status === 200 ? (await response.json()).tweet : null
 
 if (!data) return
 ---
