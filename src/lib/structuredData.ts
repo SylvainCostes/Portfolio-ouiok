@@ -7,9 +7,9 @@ export const mainWebsite: WithContext<WebSite> = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   url: import.meta.env.SITE,
-  name: 'Sylvain Costes - Software Engineer',
+  name: 'Sylvain Costes - Platform Engineer',
   description:
-    'Software Engineer passionate about web development and cloud technologies, based in Paris, France.',
+    'Platform Engineer passionate about web development and cloud technologies, based in Paris, France.',
   inLanguage: 'en_US'
 }
 
@@ -26,19 +26,26 @@ export const personSchema: WithContext<Person> = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: 'Sylvain Costes',
-  url: 'https://sylvaincostes.fr',
-  // image: `${import.meta.env.SITE}${avatar.src}`,
+  url: 'https://sylvaincostes.com',
+  // image: `${import.meta.env.SITE}${avatar.src}`, 
   sameAs: [
     'https://github.com/sylvaincostes',
-    'https://www.linkedin.com/in/sylvaincs/'
+    'https://www.linkedin.com/in/sylvaincs/',
+    'https://twitter.com/sylvaincostes' // Ajouté pour le maillage
   ],
-  jobTitle: 'Software engineer',
+  jobTitle: 'Platform Engineer', 
+  description: 'Platform Engineer @ Société Générale CIB | Cloud & DevOps (Azure / AKS) | Terraform, Kubernetes, Github Actions',
   worksFor: {
     '@type': 'Organization',
-     name: 'Société Générale CIB',
-     url: 'https://societegenerale.com',
-   },
+    name: 'Société Générale Corporate and Investment Banking',
+    url: 'https://societegenerale.com',
+  },
+  alumniOf: {
+    '@type': 'CollegeOrUniversity',
+    name: 'Université Paris Nanterre'
+  }
 }
+
 
 export function getProjectSchema(post: CollectionEntry<'projects'>) {
   const articleStructuredData: WithContext<Article> = {
