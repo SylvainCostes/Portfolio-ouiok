@@ -8,7 +8,7 @@ const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
 ---
 
-<section class='relative flex h-screen flex-col gap-8 pb-32 pt-24 lg:flex-row lg:items-center lg:justify-between'>
+<section class='relative overflow-hidden flex h-screen flex-col gap-8 pb-32 pt-24 lg:flex-row lg:items-center lg:justify-between'>
   <!-- Contenu principal à gauche sur grand écran, en haut sur petit écran -->
   <div class='relative z-10 flex flex-col gap-8 lg:max-w-2xl'>
     <div

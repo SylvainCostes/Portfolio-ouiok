@@ -27,11 +27,11 @@ export const personSchema: WithContext<Person> = {
   '@type': 'Person',
   name: 'Sylvain Costes',
   url: 'https://sylvaincostes.com',
-  // image: `${import.meta.env.SITE}${avatar.src}`, 
+  // image: `${import.meta.env.SITE}${avatar.src}`,
   sameAs: [
     'https://github.com/sylvaincostes',
-    'https://www.linkedin.com/in/sylvaincs/',
-    'https://twitter.com/sylvaincostes' // Ajouté pour le maillage
+    'https://www.linkedin.com/in/sylvain-costes/',
+    'https://twitter.com/sylvaincostes'
   ],
   jobTitle: 'Platform Engineer', 
   description: 'Platform Engineer @ Société Générale CIB | Cloud & DevOps (Azure / AKS) | Terraform, Kubernetes, Github Actions',

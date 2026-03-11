@@ -11,7 +11,7 @@ export const SOCIAL_MEDIA_DATA = [
   {
     name: 'LinkedIn',
     icon: LinkedIn,
-    href: 'https://linkedin.com/in/sylvaincs/'
+    href: 'https://linkedin.com/in/sylvain-costes/'
   },
 
   {
