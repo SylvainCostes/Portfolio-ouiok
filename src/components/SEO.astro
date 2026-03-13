@@ -12,6 +12,26 @@ interface Props extends SEOProps {
 
 const { props } = Astro
 
+const currentPath = Astro.url.pathname || '/'
+const isFrenchPage = currentPath === '/fr' || currentPath.startsWith('/fr/')
+
+const englishPath = isFrenchPage
+  ? currentPath.replace(/^\/fr(?=\/|$)/, '') || '/'
+  : currentPath
+const frenchPath = isFrenchPage
+  ? currentPath
+  : currentPath === '/'
+    ? '/fr'
+    : `/fr${currentPath}`
+
+const canonicalUrl = new URL(currentPath, BASE_URL).href
+const languageAlternates = [
+  { hrefLang: 'fr-FR', href: new URL(frenchPath, BASE_URL).href },
+  { hrefLang: 'fr', href: new URL(frenchPath, BASE_URL).href },
+  { hrefLang: 'en', href: new URL(englishPath, BASE_URL).href },
+  { hrefLang: 'x-default', href: new URL(englishPath, BASE_URL).href }
+]
+
 const metaData = {
   title: props.title ?? mainMetaData.title,
   description: props.description ?? mainMetaData.description,
@@ -22,11 +42,14 @@ const defaultProps: SEOProps = {
   title: metaData.title,
   titleDefault: metaData.title,
   description: metaData.description,
+  canonical: canonicalUrl,
+  languageAlternates,
   openGraph: {
     basic: {
       image: metaData.image,
       title: metaData.title,
       type: props.type ?? 'website',
+      url: canonicalUrl,
       ...props.openGraph?.basic
     },
     optional: {

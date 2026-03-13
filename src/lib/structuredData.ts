@@ -25,25 +25,103 @@ export const projectWebsite: WithContext<WebSite> = {
 export const personSchema: WithContext<Person> = {
   '@context': 'https://schema.org',
   '@type': 'Person',
+  '@id': 'https://sylvaincostes.com/#person',
   name: 'Sylvain Costes',
-  url: 'https://sylvaincostes.com',
-  // image: `${import.meta.env.SITE}${avatar.src}`,
+  alternateName: ['Sylvain Costes Platform Engineer', 'sylvaincostes'],
+  givenName: 'Sylvain',
+  familyName: 'Costes',
+  url: import.meta.env.SITE,
+  mainEntityOfPage: import.meta.env.SITE,
+  identifier: [
+    'https://sylvaincostes.com/#person',
+    'https://github.com/sylvaincostes'
+  ],
+  image: `${import.meta.env.SITE}/avatar.jpg`,
+  email: 'contact@sylvaincostes.com',
+  disambiguatingDescription:
+    'Official profile of Sylvain Costes, Platform Engineer in Paris specialized in Azure, Kubernetes, Terraform and infrastructure automation.',
   sameAs: [
     'https://github.com/sylvaincostes',
     'https://www.linkedin.com/in/sylvain-costes/',
-    'https://twitter.com/sylvaincostes'
+    'https://twitter.com/sylvaincostes',
+    'https://x.com/sylvaincostes',
+    'https://malt.fr/profile/sylvaincostes'
   ],
-  jobTitle: 'Platform Engineer', 
-  description: 'Platform Engineer @ Société Générale CIB | Cloud & DevOps (Azure / AKS) | Terraform, Kubernetes, Github Actions',
+  jobTitle: 'Platform Engineer',
+  description:
+    'Platform Engineer at Societe Generale CIB focused on Azure, AKS, Terraform, Kubernetes and CI/CD automation.',
+  knowsAbout: [
+    'Platform Engineering',
+    'Cloud Native Infrastructure',
+    'Infrastructure as Code',
+    'DevOps',
+    'Site Reliability Engineering',
+    'Kubernetes',
+    'Terraform',
+    'Azure Kubernetes Service (AKS)',
+    'GitHub Actions',
+    'Docker',
+    'Linux'
+  ],
+  knowsLanguage: ['en', 'fr'],
+  nationality: {
+    '@type': 'Country',
+    name: 'France'
+  },
+  hasOccupation: {
+    '@type': 'Occupation',
+    name: 'Platform Engineer',
+    skills: 'Kubernetes, Terraform, AKS, GitHub Actions, Docker, Linux'
+  },
+  affiliation: {
+    '@type': 'Organization',
+    name: 'Société Générale Corporate and Investment Banking',
+    alternateName: 'SG CIB',
+    url: 'https://www.societegenerale.com'
+  },
+  memberOf: {
+    '@type': 'Organization',
+    name: 'Société Générale Corporate and Investment Banking',
+    alternateName: 'SG CIB',
+    url: 'https://www.societegenerale.com'
+  },
   worksFor: {
     '@type': 'Organization',
     name: 'Société Générale Corporate and Investment Banking',
-    url: 'https://societegenerale.com',
+    alternateName: 'SG CIB',
+    url: 'https://wholesale.banking.societegenerale.com/',
+    sameAs: 'https://www.societegenerale.com',
+    parentOrganization: {
+      '@type': 'Organization',
+      name: 'Societe Generale',
+      url: 'https://www.societegenerale.com'
+    }
   },
-  alumniOf: {
-    '@type': 'CollegeOrUniversity',
-    name: 'Université Paris Nanterre'
-  }
+  alumniOf: [
+    {
+      '@type': 'CollegeOrUniversity',
+      name: 'Université Paris Nanterre',
+      sameAs: 'https://www.wikidata.org/wiki/Q1394262'
+    }
+  ],
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Paris',
+    addressRegion: 'Ile-de-France',
+    addressCountry: 'FR'
+  },
+  subjectOf: [
+    {
+      '@type': 'WebPage',
+      url: `${import.meta.env.SITE}/about/`,
+      name: 'About Sylvain Costes'
+    },
+    {
+      '@type': 'WebPage',
+      url: `${import.meta.env.SITE}/fr/about/`,
+      name: 'A propos de Sylvain Costes'
+    }
+  ]
 }
 
 

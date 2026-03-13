@@ -17,6 +17,6 @@ export const SOCIAL_MEDIA_DATA = [
   {
     name: 'Email',
     icon: Mail,
-    href: 'mailto:contact@sylvaincostes.fr'
+    href: 'mailto:contact@sylvaincostes.com'
   }
 ]

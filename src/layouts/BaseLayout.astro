@@ -3,16 +3,18 @@ import BaseHead from '@/components/BaseHead.astro'
 import BottomNavigationBar from '@/components/BottomNavigationBar'
 import Footer from '@/components/Footer'
 import SEO from '@/components/SEO.astro'
+import { getLangFromUrl } from '@/i18n/utils'
 
 interface Props {
   class?: string
 }
 
 const { class: className } = Astro.props
+const lang = getLangFromUrl(Astro.url)
 ---
 
 <!doctype html>
-<html lang='en' class='dark'>
+<html lang={lang} class='dark'>
   <head>
     <BaseHead />
     <slot name='head' />
