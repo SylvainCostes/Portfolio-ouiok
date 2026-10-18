@@ -13,6 +13,8 @@ WORKDIR /app
 RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG MAINTENANCE_MODE=true
+ENV MAINTENANCE_MODE=$MAINTENANCE_MODE
 RUN pnpm run build:node
 
 # Stage 3: Runner

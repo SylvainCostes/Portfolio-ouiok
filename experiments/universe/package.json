@@ -1,0 +1,13 @@
+{
+  "name": "universe-local-experiment",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@designcodeio/threeui": "file:./vendor/threeui",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/three128": "npm:@types/three@0.128.0"
+  }
+}

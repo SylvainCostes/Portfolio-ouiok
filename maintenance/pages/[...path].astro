@@ -1,0 +1,71 @@
+---
+import SiteModel from '../components/SiteModel.astro'
+import '../styles/maintenance.css'
+
+if (Astro.url.pathname !== '/') {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: '/', 'Cache-Control': 'no-store, max-age=0' }
+  })
+}
+Astro.response.status = 200
+Astro.response.headers.set('Cache-Control', 'no-store, max-age=0')
+---
+
+<!doctype html>
+<html lang='fr'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <meta name='theme-color' content='#eeece6' />
+    <title>Sylvain Costes — Tout se (re)construit.</title>
+    <meta
+      name='description'
+      content='Le site de Sylvain Costes se reconstruit. Une petite pause pour donner forme à de nouvelles idées. Restons en contact.'
+    />
+    <link rel='canonical' href='https://sylvaincostes.com/' />
+    <link rel='icon' type='image/svg+xml' href='/maintenance-mark.svg' />
+    <link
+      rel='preload'
+      href='/fonts/Switzer-Variable.woff2'
+      as='font'
+      type='font/woff2'
+      crossorigin
+    />
+  </head>
+  <body>
+    <a class='skip-link' href='#main'>Aller au contenu</a>
+    <div class='page-shell'>
+      <header class='masthead'>
+        <a class='brand' href='/' aria-label='Sylvain Costes, accueil'>
+          <svg viewBox='0 0 40 40' fill='none' aria-hidden='true'
+            ><path
+              d='M18 7H5v13h13v13H5M35 7H23v26h12'
+              stroke='currentColor'
+              stroke-width='5'
+              stroke-linejoin='miter'></path></svg
+          >
+          <span>Sylvain<br />Costes<span class='brand-dot'>.</span></span>
+        </a>
+        <a class='contact-link' href='mailto:contact@sylvaincostes.com'
+          >Contact <span aria-hidden='true'>↗</span></a
+        >
+      </header>
+
+      <main id='main'>
+        <section class='installation' aria-labelledby='page-title'>
+          <div class='intro'>
+            <h1 id='page-title'>
+              Tout se<br /><span class='re-word'>(re)</span>construit<span
+                class='title-dot'>.</span
+              >
+            </h1>
+            <p class='intro-copy' lang='en'>Building something.</p>
+          </div>
+
+          <SiteModel />
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

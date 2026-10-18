@@ -1,0 +1,5 @@
+{
+  "reason": "Explicit user request: make localhost:4321/universe available in normal Astro development while preserving production routing.",
+  "originalSha256": "d61d7bb644427c85bd11b00ba3c27c5ea75dd5901a1934b0eaafd7e1102cd79c",
+  "approvedSha256": "b4f6bc97f068b8a101b529ad54064c5f85bb807e299ab487ba641dfa300f4cc4"
+}

@@ -1,0 +1,162 @@
+---
+import './universe.css'
+import fontUrl from '../../maintenance/public/fonts/Switzer-Variable.woff2?url'
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+---
+
+<!doctype html>
+<html lang='fr'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <meta name='theme-color' content='#29383d' />
+    <meta name='robots' content='noindex, nofollow' />
+    <meta name='description' content='Un univers en suspension. Une exploration architecturale de Platform Engineering, par Sylvain Costes.' />
+    <title>Universe · Sylvain Costes</title>
+    <link rel='preload' href={fontUrl} as='font' type='font/woff2' crossorigin />
+  </head>
+  <body>
+    <main id='universe' class='universe' data-state='loading' data-view='overview' aria-busy='true'>
+      <section class='universe-loader' id='universe-loader' aria-label='Préparation de l’univers'>
+        <div class='loader-brand'>Sylvain Costes <span>Expérience / 01</span></div>
+        <div class='loader-orbit' aria-hidden='true'><i></i><i></i><i></i><span>SC</span></div>
+        <div class='loader-heading'><p>Quelques instants avant l’ailleurs.</p><h2>Un monde<br />prend forme.</h2></div>
+        <div class='loader-footer'>
+          <span id='universe-load-label' role='status'>Chargement de l’expérience</span>
+          <span class='loader-count'><span id='universe-load-count'>000</span><small>%</small></span>
+          <progress id='universe-progress' max='8' value='0' aria-label='Préparation du monde'></progress>
+          <span class='loader-note'>Assemblage de l’archipel</span><span class='loader-note'>Universe · Vol. 02</span>
+        </div>
+      </section>
+      <div id='universe-nebula' class='universe-nebula' aria-hidden='true'></div>
+      <div id='universe-orbital' class='universe-orbital' aria-hidden='true'></div>
+      <div class='universe-world' id='universe-world'>
+        <div class='universe-fallback' id='universe-fallback' role='img' aria-label='Un archipel industriel suspendu dans les nuages. Deux ponts relient une vaste citadelle centrale à des îles lointaines.'>
+          <svg viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice' aria-hidden='true'>
+            <defs>
+              <linearGradient id='sky' x2='.2' y2='1'><stop stop-color='#243a44'/><stop offset='.7' stop-color='#8c9c9b'/><stop offset='1' stop-color='#d5c6b0'/></linearGradient>
+              <linearGradient id='tower' x2='1' y2='.2'><stop stop-color='#718083'/><stop offset='.25' stop-color='#34454b'/><stop offset='1' stop-color='#17282f'/></linearGradient>
+              <linearGradient id='hull' x2='0' y2='1'><stop stop-color='#647678'/><stop offset='1' stop-color='#15252e'/></linearGradient>
+              <radialGradient id='haze'><stop stop-color='#c8d4cf' stop-opacity='.7'/><stop offset='1' stop-color='#b6c8c8' stop-opacity='0'/></radialGradient>
+              <pattern id='fins' width='13' height='20' patternUnits='userSpaceOnUse'><path d='M2 0v20' stroke='#a4ada5' stroke-width='2' opacity='.3'/><path d='M7 0v20' stroke='#0e242e' stroke-width='3' opacity='.6'/></pattern>
+              <filter id='soft'><feGaussianBlur stdDeviation='19'/></filter>
+            </defs>
+            <path fill='url(#sky)' d='M0 0h1600v1000H0z'/>
+            <ellipse cx='520' cy='300' rx='650' ry='430' fill='url(#haze)'/>
+            <g fill='url(#hull)' stroke='#71898c' stroke-width='2'>
+              <path d='m105 510 90-40 120 40-30 66-88 37-67-49Z'/>
+              <path d='m139 501 8-61 72-27 47 38v48l-67 29Z'/>
+              <path d='m1250 447 112-35 124 37-56 87-91 32-66-68Z'/>
+              <path d='m1300 433 15-137 14-31 9 169m65-2 10-145 14-27 5 173'/>
+            </g>
+            <ellipse cx='1375' cy='353' rx='47' ry='55' fill='none' stroke='#83b7b9' stroke-width='5'/>
+            <g fill='none' stroke='#65868a'>
+              <path d='m260 518 380 128m-380-128q190 8 380 128m420-34 283-162m-283 162q105-15 283-162' stroke-width='6'/>
+              <path d='m302 525v8m38 1v14m38-2v16m38-2v16m38-1v15m38 0v14m38 0v15m38 0v11m38 6v10M1120 575v6m33-26v10m33-29v10m33-33v14m33-37v14m33-40v10m33-45v9' stroke-width='2'/>
+            </g>
+            <g transform='translate(80 0)'>
+              <path d='m500 598 76-44 98 8 60-71 150 6 73 31 103-5 145 75-70 57-36 5-48 65-100 17-97-16-51 26-123-42-26-46-81-14Z' fill='#657b7c'/>
+              <path d='m500 598 134 66 26 46 123 42 51-26 97 16 100-17 48-65 126-62-70 94-118 139-82 12-75 69-77-87-91-36-62-90Z' fill='url(#hull)'/>
+              <path d='m650 690 40 127 162 95 130-102 100-111-145 102-160-8Z' fill='#263b44'/>
+              <g stroke='#8d9c9a' stroke-width='7' opacity='.35'><path d='m710 733 56 127m8-112 45 139m42-138 9 140m58-144-26 125m83-146-49 105'/></g>
+              <g fill='url(#tower)' stroke='#a7aaa0' stroke-opacity='.4' stroke-width='2'>
+                <path d='m662 395 47-16 56 23v224l-50 21-53-27Z'/>
+                <path d='m764 272 50-26 65 25v330l-61 29-54-30Z'/>
+                <path d='m899 334 52-21 68 26v278l-63 33-57-24Z'/>
+              </g>
+              <g fill='url(#fins)'><path d='m662 412 53 21v214l-53-27Z'/><path d='m764 286 54 25v319l-54-30Z'/><path d='m899 348 57 25v277l-57-24Z'/></g>
+              <g fill='none' stroke='#81d8da' opacity='.8'><ellipse cx='892' cy='669' rx='100' ry='33' stroke-width='6'/><ellipse cx='892' cy='669' rx='79' ry='24' stroke-width='2'/><path d='M892 651V150' stroke-width='3' opacity='.3'/></g>
+              <g stroke='#d7a56b' stroke-width='3'><path d='m769 393 44 21m91 34 45 19m-282 33 42 17m82 203 47 3 32-13'/></g>
+            </g>
+            <g filter='url(#soft)' fill='#c1cdca' opacity='.6'><ellipse cx='300' cy='850' rx='430' ry='90'/><ellipse cx='1400' cy='790' rx='460' ry='60'/><ellipse cx='900' cy='1000' rx='640' ry='130'/></g>
+          </svg>
+        </div>
+        <canvas id='universe-canvas' aria-label='Archipel en trois dimensions. Cliquez sur une île ou utilisez les destinations en bas de page.' aria-describedby='universe-help' tabindex='0' hidden></canvas>
+      </div>
+
+      <div id='universe-interface' inert>
+      <header class='universe-header'>
+        <a class='universe-brand' href='/' aria-label='Sylvain Costes, accueil'>
+          <svg viewBox='0 0 32 32' fill='none' aria-hidden='true'><path d='M14 6H6v10h8v10H4M28 6h-8v20h8' stroke='currentColor' stroke-width='2.2' stroke-linecap='square'/></svg>
+          <span>Sylvain Costes</span>
+        </a>
+        <a class='universe-contact' href='mailto:contact@sylvaincostes.com'>Parlons-nous <span aria-hidden='true'>↗</span></a>
+      </header>
+
+      <div class='universe-wayfinding'><button id='universe-back' hidden>← Vue d’ensemble</button><span id='universe-location'>Un archipel à explorer</span></div>
+      <div id='universe-hotspots' class='universe-hotspots' aria-label='Objets et destinations'></div>
+
+      <aside id='universe-detail' class='universe-detail' aria-labelledby='detail-title' hidden>
+        <button class='detail-close' aria-label='Fermer la fiche'>Fermer <span aria-hidden='true'>×</span></button>
+        <p class='detail-eyebrow'>Dans les coulisses de l’archipel</p>
+        <h2 id='detail-title'></h2><p class='detail-description'></p>
+        <button class='detail-toggle'></button>
+      </aside>
+
+      <article class='universe-about' id='universe-about' aria-labelledby='about-title' hidden>
+        <p class='detail-eyebrow'>De l’autre côté du décor</p>
+        <h2 id='about-title' tabindex='-1'>Sylvain<br />Costes<span>.</span></h2>
+        <p class='about-role'>Platform & DevOps Engineer</p>
+        <p>Je construis les plateformes qui permettent aux idées de prendre vie. Du code à l’infrastructure, j’aime comprendre, automatiser et rendre les choses plus simples.</p>
+        <div class='about-skills' aria-label='Domaines'>Azure / AKS <span>Terraform</span> CI/CD</div>
+        <div class='about-links'><a href='https://github.com/sylvaincostes' target='_blank' rel='noopener noreferrer'>GitHub ↗</a><a href='mailto:contact@sylvaincostes.com'>Parlons-nous ↗</a></div>
+        <button id='about-return'>← Retrouver les îles</button>
+      </article>
+
+      <div class='universe-editorial'>
+        <h1 lang='en'>Engineering<br />beyond the ordinary.</h1>
+        <p class='universe-subtitle'>Platform Engineering</p>
+      </div>
+
+      <div class='universe-actions' id='universe-actions' hidden>
+        <button id='universe-view' class='universe-view' type='button' aria-label='Explorer l’île, passer à la perspective suivante'>
+          <span>Changer de vue</span><svg viewBox='0 0 24 24' fill='none' aria-hidden='true'><path d='M5 12h14m-6-6 6 6-6 6' stroke='currentColor' stroke-width='1.2'/></svg>
+        </button>
+        <button id='universe-pause' class='universe-pause' type='button' aria-label='Mettre l’animation en pause' aria-pressed='false' title='Mettre l’animation en pause'>
+          <svg viewBox='0 0 24 24' fill='none' aria-hidden='true'><path class='pause-symbol' d='M9 6v12M15 6v12' stroke='currentColor' stroke-width='1.5'/><path class='play-symbol' d='m9 6 9 6-9 6Z' stroke='currentColor' stroke-width='1.2'/></svg>
+        </button>
+      </div>
+      <nav class='universe-destinations' aria-label='Destinations de l’archipel'>
+        <button data-travel='3' aria-pressed='false'><span>01</span> Atelier</button>
+        <button data-travel='4' aria-pressed='false'><span>02</span> Observatoire</button>
+      </nav>
+      <p id='universe-failure' class='universe-failure' role='status'></p>
+      <button class='universe-retry' id='universe-retry' type='button' hidden>Recharger la scène <span aria-hidden='true'>↻</span></button>
+      </div>
+      <p id='universe-help' class='universe-sr-only'>Visitez l’atelier ou l’observatoire puis sélectionnez les objets numérotés. Les destinations et objets sont accessibles avec Tab et Entrée. Les flèches changent de perspective. Échap ferme une fiche ou revient aux îles. Le mouvement peut être mis en pause.</p>
+      <p class='universe-sr-only' id='universe-status' role='status' aria-live='polite'></p>
+      <noscript><style>.universe-loader{display:none!important}.universe-fallback{opacity:1!important;visibility:visible!important}</style><p class='universe-noscript'>Activez JavaScript pour explorer l’archipel. <a href='mailto:contact@sylvaincostes.com'>Contacter Sylvain</a></p></noscript>
+    </main>
+    <script>
+      import { createLoading } from './lib/loading'
+      const main = document.querySelector<HTMLElement>('#universe')
+      const lifetime = new AbortController()
+      let dispose: (() => void) | undefined
+      let cancelled = false
+      if (main) {
+        const loading = createLoading(main)
+        document.querySelector('#universe-retry')?.addEventListener('click', () => location.reload(), { signal: lifetime.signal })
+        import('./lib/experience').then(async ({ createExperience }) => {
+          if (cancelled) return
+          await loading.advance(1)
+          const cleanup = await createExperience(main, loading, lifetime.signal)
+          if (cancelled) cleanup()
+          else dispose = cleanup
+        }).catch((error) => {
+          if (cancelled) return
+          main.dataset.state = 'fallback'
+          loading.fail('L’expérience n’a pas pu démarrer. Vous pouvez réessayer.')
+          document.querySelector('#universe-fallback')?.removeAttribute('aria-hidden')
+          document.querySelector('#universe-canvas')?.setAttribute('hidden', '')
+          console.warn('Universe: l’illustration statique reste disponible.', error)
+        })
+      }
+      if (import.meta.hot) import.meta.hot.dispose(() => {
+        cancelled = true
+        lifetime.abort()
+        dispose?.()
+      })
+    </script>
+  </body>
+</html>

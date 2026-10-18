@@ -1,0 +1,13 @@
+{
+  "name": "@designcodeio/threeui",
+  "version": "1.2.0-universe.40eb5bac81e3",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./src/shaders/threeui.css"
+  },
+  "dependencies": { "three128": "npm:three@0.128.0" },
+  "peerDependencies": { "react": "19.0.0" }
+}

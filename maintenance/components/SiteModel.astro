@@ -1,0 +1,136 @@
+<div class='model-area' id='model-area'>
+  <div
+    class='model-viewport'
+    id='model-viewport'
+    role='group'
+    aria-label='Maquette interactive du chantier SC'
+    aria-describedby='model-help'
+  >
+    <div
+      class='model-fallback'
+      id='model-fallback'
+      role='img'
+      aria-label='Les initiales SC en volume sur une maquette de chantier, sous une grue orange.'
+    >
+      <svg viewBox='0 0 800 660' aria-hidden='true'>
+        <ellipse cx='420' cy='551' rx='262' ry='55' fill='#c7c4bb' opacity='.3'
+        ></ellipse>
+        <path d='M130 455 425 350 715 463 425 585Z' fill='#535850'></path><path
+          d='m130 455 295 113 290-105v28L425 610 130 483Z'
+          fill='#303a33'></path>
+        <g stroke='#e7582d' stroke-width='9' fill='none'
+          ><path
+            d='M550 399V100h36v312M550 140l36 40-36 40 36 40-36 40 36 40-36 40M350 100h330v32H350ZM350 132l40-32 40 32 40-32 40 32 40-32 40 32 40-32 40 32M568 100V65l-180 35M568 65l92 35'
+          ></path></g
+        >
+        <path
+          d='M390 133v95m-25 15 25-15 25 15'
+          stroke='#444b44'
+          stroke-width='3'
+          fill='none'></path>
+        <g stroke='#b9b7ad' stroke-width='1'
+          ><path d='m240 299 87-30 80 28-85 30Z' fill='#faf7ef'></path><path
+            d='m240 299 82 28v42l-43-17v35l44 17v80l-95-37v-40l54 20v-30l-42-17Z'
+            fill='#e2dfd4'></path><path
+            d='m322 327 85-30v39l-45 16v32l45 17v76l-84 27v-100l-44-17v-35l43 17Z'
+            fill='#bcbdb2'></path>
+          <path d='m437 331 91-30 64 26-88 31Z' fill='#faf7ef'></path><path
+            d='m437 331 67 27v40l-29-12v64l29 12v39l-67-27Z'
+            fill='#e2dfd4'></path><path
+            d='m504 358 88-31v40l-88 31m0 64 88-31v40l-88 30'
+            fill='#bcbdb2'></path>
+          <path d='m358 247 63-22 80 28-64 24Z' fill='#f6f3e9'></path><path
+            d='m358 247 79 30v33l-79-30Z'
+            fill='#e2dfd4'></path><path
+            d='m437 277 64-24v33l-64 24Z'
+            fill='#bcbdb2'></path></g
+        >
+        <g fill='#e7582d'
+          ><path d='m211 471 11-31 11 38Z'></path><path
+            d='m589 510 11-31 11 38Z'></path></g
+        >
+      </svg>
+    </div>
+    <canvas
+      id='site-canvas'
+      aria-label='Vue 3D de la maquette. Utilisez les flèches gauche et droite pour tourner, ou faites glisser.'
+      tabindex='0'
+      hidden></canvas>
+  </div>
+  <div class='model-controls' id='model-controls' hidden>
+    <p id='model-help' class='sr-only'>
+      Faites glisser la maquette pour tourner, ou utilisez les flèches du
+      clavier. Les boutons permettent de séparer les blocs, de mettre
+      l’animation en pause et de réinitialiser la vue.
+    </p>
+    <div class='control-buttons'>
+      <button
+        id='explode-control'
+        type='button'
+        aria-pressed='false'
+        aria-label='Vue éclatée'
+        data-tooltip='Vue éclatée'
+        ><svg viewBox='0 0 24 24' fill='none' aria-hidden='true'
+          ><path
+            d='m12 3 8 5-8 5-8-5 8-5Zm-8 9 8 5 8-5M4 16l8 5 8-5'
+            stroke='currentColor'
+            stroke-width='1.5'></path></svg
+        ></button
+      >
+      <button
+        id='pause-control'
+        class='icon-button'
+        type='button'
+        aria-label='Mettre l’animation en pause'
+        data-tooltip='Pause'
+        aria-pressed='false'
+        ><svg viewBox='0 0 24 24' fill='none' aria-hidden='true'
+          ><path
+            class='pause-icon'
+            d='M9 6v12M15 6v12'
+            stroke='currentColor'
+            stroke-width='2'></path><path
+            class='play-icon'
+            d='m9 6 9 6-9 6Z'
+            fill='currentColor'></path></svg
+        ></button
+      >
+      <button
+        id='reset-control'
+        class='icon-button'
+        type='button'
+        aria-label='Réinitialiser la vue'
+        data-tooltip='Recentrer'
+        ><svg viewBox='0 0 24 24' fill='none' aria-hidden='true'
+          ><path
+            d='M5 10a7 7 0 1 1 1 7M5 4v6h6'
+            stroke='currentColor'
+            stroke-width='1.5'></path></svg
+        ></button
+      >
+    </div>
+  </div>
+  <p class='sr-only' id='scene-announcement' aria-live='polite'></p>
+</div>
+
+<script>
+  const viewport = document.getElementById('model-viewport')
+  if (viewport) {
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        observer.disconnect()
+        try {
+          const { createConstructionScene } = await import(
+            '../scripts/construction-scene'
+          )
+          createConstructionScene()
+        } catch (error) {
+          console.warn('La maquette illustrée reste disponible.', error)
+        }
+      },
+      { rootMargin: '100px' }
+    )
+    observer.observe(viewport)
+  }
+</script>

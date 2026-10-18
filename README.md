@@ -2,6 +2,16 @@
 
 My personal portfolio, blog & projects, built with Astro.
 
+## Temporary construction installation
+
+The build defaults to the interactive maintenance experience. The homepage returns HTTP 200 and old or unknown routes return HTTP 302 to `/`. Only the maintenance source and its small public asset directory are included in that build. `robots.txt` remains crawlable and the homepage has a canonical URL; there is no global `noindex`.
+
+To preview locally, run `pnpm dev`. To build and check the maintenance mode, run `pnpm build`. The Docker image also defaults to maintenance mode, so the existing deployment pipeline can use its normal build command.
+
+To restore the original portfolio, build with `MAINTENANCE_MODE=false` (for example, `MAINTENANCE_MODE=false pnpm build:node` on Linux, or `$env:MAINTENANCE_MODE='false'; pnpm build:node` in PowerShell). For Docker, pass `--build-arg MAINTENANCE_MODE=false` when building the image. Rebuild and redeploy after changing this flag: it is intentionally a build-time switch. The original `src/` pages, components, articles and `public/` assets stay in place.
+
+`pnpm build:node` skips the existing source-wide Astro type check when restoring the original site; this matches the previous Docker build behavior. `pnpm build` still runs the check. The maintenance build always type checks its own source before building. Run `node --test tests/maintenance-routing.test.mjs` after a maintenance build to check production routing and asset isolation.
+
 ## 📚 Tech Stack
 
 - Framework: [Astro](https://astro.build/) with TypeScript
