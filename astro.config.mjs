@@ -13,14 +13,16 @@ const adapter = node({ mode: 'standalone' })
 // Maintenance is a build-time choice. Only an explicit false restores the portfolio.
 const maintenance = process.env.MAINTENANCE_MODE !== 'false'
 
-// Optional local experiment. Never register this route during build or preview.
+// The experiment stays outside production unless the image build opts in.
 // Removing experiments/universe leaves the ordinary site fully functional.
 /** @type {import('astro').AstroIntegration} */
-const localUniversePreview = {
-  name: 'local-universe-preview',
+const universeRoute = {
+  name: 'universe-route',
   hooks: {
     'astro:config:setup': async ({ command, injectRoute }) => {
-      if (command !== 'dev') return
+      const enabled = command === 'dev' ||
+        (command === 'build' && process.env.ENABLE_UNIVERSE === 'true')
+      if (!enabled) return
       const { existsSync } = await import('node:fs')
       const { fileURLToPath } = await import('node:url')
       const page = new URL('./experiments/universe/Universe.astro', import.meta.url)
@@ -96,9 +98,9 @@ export default defineConfig({
   },
 
   integrations: maintenance
-    ? [localUniversePreview]
+    ? [universeRoute]
     : [
-        localUniversePreview,
+        universeRoute,
         mdx({
           rehypePlugins: [
             rehypeSlug,

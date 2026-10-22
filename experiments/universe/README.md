@@ -1,6 +1,6 @@
-# Universe — prototype local isolé
+# Universe — production route with local preview
 
-Cette expérience est accessible sur `/universe` uniquement en développement. Elle conserve l'accueil de chantier, les redirections temporaires et tous les fichiers du site existant. L'ajout local dans `astro.config.mjs` a été explicitement autorisé ; il n'enregistre aucune route pendant un build de production. Aucune commande de production ni configuration de déploiement n'est changée par le prototype.
+Cette expérience est accessible sur `/universe` en développement et dans l'image de production construite avec `ENABLE_UNIVERSE=true`. L'accueil de chantier et les redirections existantes sont conservés. Les builds sans cette option restent isolés du prototype.
 
 ## Lancer
 
@@ -22,13 +22,13 @@ Il écoute uniquement sur `127.0.0.1:4324`. Un autre port peut être fourni en a
 
 ## Isolation et retrait
 
-- La configuration principale comporte une intégration locale optionnelle : elle vérifie l'existence de `Universe.astro` et injecte `/universe` uniquement pendant la commande `dev`.
-- Le fichier de page n'est ni importé ni enregistré pendant `build`, `preview` ou `sync`.
+- La configuration principale vérifie l'existence de `Universe.astro` et injecte `/universe` en `dev` ; elle l'injecte aussi pendant `build` seulement si `ENABLE_UNIVERSE=true`.
+- Le fichier de page n'est pas importé ni enregistré dans les builds sans cette option. `preview` sert la route créée au moment du build, le cas échéant.
 - La configuration alternative hérite de cette route et ajoute un serveur local avec un cache indépendant.
 - Les commandes `build` et `preview` avec la configuration alternative sont explicitement refusées.
 - Les composants, shaders, styles et ressources propres à l'expérience restent dans ce dossier. Les ressources sont importées depuis le code, sans ajout au dossier public du site.
 - Aucun lien vers `/universe` n'est ajouté à l'accueil, au sitemap ou au menu du site.
-- Le build de maintenance ordinaire continue à répondre `302` pour `/universe`, comme pour les autres URL inconnues. Aucun script ou modèle du prototype n'est inclus dans son résultat.
+- Le build de maintenance par défaut continue à répondre `302` pour `/universe`, comme pour les autres URL inconnues. Le workflow Docker de production active la route avec `ENABLE_UNIVERSE=true`, sans remplacer la page d'accueil de maintenance.
 
 Pour retirer le prototype, arrêter ses serveurs et déplacer ou supprimer uniquement `experiments/universe`, après avoir conservé les versions souhaitées. Le cache facultatif `node_modules/.astro-universe` peut aussi être retiré. L'intégration locale devient inactive quand `Universe.astro` est absent ; aucun changement supplémentaire n'est nécessaire dans le site existant.
 

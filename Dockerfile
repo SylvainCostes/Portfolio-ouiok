@@ -15,6 +15,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG MAINTENANCE_MODE=true
 ENV MAINTENANCE_MODE=$MAINTENANCE_MODE
+ARG ENABLE_UNIVERSE=false
+ENV ENABLE_UNIVERSE=$ENABLE_UNIVERSE
 RUN pnpm run build:node
 
 # Stage 3: Runner
